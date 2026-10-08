@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# macOS
+.DS_Store
+
+# Video / Audio test outputs
+*.mp4
+*.wav
+*.mp3
+*.mov
+_ags_temp_*/
+_ags_mask_temp_*/
+_ags_sub_temp_*/
+_ags_kinetic_temp_*/
+_ags_doodle_temp_*/
