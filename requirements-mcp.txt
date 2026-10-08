@@ -1,0 +1,3 @@
+# Tuỳ chọn: chỉ cần khi chạy MCP server (mcp/ags_mcp_server.py).
+# Dùng FastMCP của MCP Python SDK 1.x (bản 2.x đã đổi tên FastMCP).
+mcp>=1.10,<2

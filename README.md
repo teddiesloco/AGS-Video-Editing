@@ -1,72 +1,63 @@
-# 🎬 AGS-Video-Editing — AgentSea Video Editing Suite
+# 🎬 AGS Video Editing — bộ skill edit video tự động của AGS (Agent Space)
 
-Bộ 5 công cụ tự động hóa video độc quyền thuộc hệ sinh thái AgentSea, giúp tiết kiệm 90% thời gian biên tập video hàng ngày.
+6 skill edit video chạy bằng Python + FFmpeg trên macOS và Windows, dùng được từ Claude Code, Codex, Google Antigravity / Gemini, Cursor (gọi script trực tiếp hoặc qua MCP server).
 
-
-> 📘 **HƯỚNG DẪN ĐA NỀN TẢNG:** Xem chi tiết file [**HUONG-DAN-SU-DUNG.md**](HUONG-DAN-SU-DUNG.md) để biết cách dùng trên **Claude Code, Codex, Google Antigravity, Cursor** hoặc trực tiếp trên website **chatgpt.com** và **claude.ai**.
----
-
-## 🚀 Tính Năng Chính
-1. **Cắt Lọc Tự Động (`/ags-edit-az`):** Cắt bỏ sạch sẽ tiếng "ờ, à", từ lặp và khoảng nghỉ chết.
-2. **Chữ Chìm Sau Người (`/ags-edit-hook`):** AI tách nền 3 lớp, tạo hiệu ứng giật tít chuyên nghiệp như editor triệu view.
-3. **Phụ Đề Tạp Chí (`/ags-edit-editorial`):** Typography thanh lịch, né mặt thông minh, âm lượng chuẩn `-14 LUFS`.
-4. **Hoạt Hình Chữ 2D (`/ags-voice-kinetic`):** Chỉ cần audio ghi âm là có video ngắn đăng Reels/TikTok.
-5. **Người Que Nét Chì (`/ags-voice-doodle`):** Kể chuyện giấu mặt trên nền giấy vintage mộc mạc.
+> 📘 **Hướng dẫn chi tiết:** [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md) — cài đặt, dùng trên từng coding agent, cấu hình MCP, dùng trên chatgpt.com / claude.ai.
 
 ---
 
-## 🛡️ Đồ Nghề Chống AI Slop & Tương Thích Đa Nền Tảng AI
-- **Google Antigravity & Gemini:** Tích hợp bộ quy tắc tại `adapters/antigravity_gemini.md` giúp Gemini chạy thẳng lệnh kỹ thuật, cấm nói nhảm, cấm sinh bash lỗi.
-- **Claude Desktop & Code:** Adapter chuẩn slash command tại `adapters/claude_rules.md`.
-- **ChatGPT Custom GPT:** System prompt chuẩn hoá tại `adapters/chatgpt_custom_instructions.md`.
-- **Harness Kiểm Định Chất Lượng Tự Động:**
-  ```bash
-  python harness/anti_slop_guard.py "video_output.mp4"
-  ```
-  Tự động quét: Lệch âm thanh A/V Sync, phụ đề rác, lặp từ ảo giác, đen màn hình và kiểm tra chuẩn âm lượng phát thanh `-14 LUFS`.
+## 🚀 6 Skill
+| Skill | Script | Làm gì |
+|---|---|---|
+| `/ags-edit-az` | `scripts/ags_cut_silence.py` | Bỏ khoảng lặng dài và từ đệm "ờ, à, ừm", cắt chính xác từng khung hình, chuẩn -14 LUFS |
+| `/ags-edit-hook` | `scripts/ags_text_behind_person.py` | Tách người bằng rembg, đặt câu hook chìm sau lưng người nói |
+| `/ags-edit-editorial` | `scripts/ags_editorial_sub.py` | Phụ đề Serif phong cách tạp chí + chuẩn âm lượng -14 LUFS |
+| `/ags-voice-kinetic` | `scripts/ags_voice_to_kinetic.py` | File ghi âm → video chữ 2D bật nảy 1080x1920 |
+| `/ags-voice-doodle` | `scripts/ags_voice_to_doodle.py` | File ghi âm → video người que nét chì trên giấy kraft |
+| `/ags-edit-bds` | `scripts/ags_bds_cli.py` | Video Bất Động Sản: viền thửa đất, lưới phân lô, ticker, cắt theo beat, draft CapCut (thử nghiệm) hoặc render MP4 |
+
+Mô tả từng bước nằm trong `skills/<tên-skill>/SKILL.md`.
+
+## 🛡️ Anti-AI-Slop Guard (bắt buộc trước khi bàn giao)
+```bash
+python harness/ags_anti_slop_guard.py "video_output.mp4"
+```
+Kiểm tra: file đọc được và ≥ 1s, có tiếng, độ dài hình/tiếng lệch ≤ 0.25s, âm lượng -14 ± 2 LUFS, không có đoạn đen màn hình ≥ 0.5s.
+Exit `0` = đạt · `2` = có cảnh báo · `1` = lỗi nghiêm trọng.
 
 ---
 
 ## 💻 Cài Đặt
+Yêu cầu: Python 3.10+, FFmpeg. Lần chạy đầu, faster-whisper tự tải model Whisper và rembg tự tải model tách người (cần Internet).
 
-### 🍎 Dành cho macOS:
-1. Mở Terminal tại thư mục này.
-2. Chạy lệnh:
-   ```bash
-   chmod +x CAI-DAT-MAC.sh && ./CAI-DAT-MAC.sh
-   ```
+- **macOS:** mở Terminal tại thư mục này: `chmod +x CAI-DAT-MAC.sh && ./CAI-DAT-MAC.sh`
+- **Windows:** bấm đúp `CAI-DAT-WIN.bat`
 
-### 🪟 Dành cho Windows:
-1. Bấm đúp vào file `CAI-DAT-WIN.bat` để chạy cài đặt tự động.
+Installer tạo `venv/` và cài `requirements.txt`; MCP server là tuỳ chọn (`requirements-mcp.txt`, installer sẽ hỏi).
 
----
+## 🛠️ Chạy Trực Tiếp
+macOS dùng `./venv/bin/python`, Windows dùng `venv\Scripts\python`:
+```bash
+python scripts/ags_cut_silence.py "video_quay_tho.mp4"
+python scripts/ags_text_behind_person.py "video.mp4" --text "90 NGÀY KIẾM 1 TỶ"
+python scripts/ags_editorial_sub.py "video.mp4"
+python scripts/ags_voice_to_kinetic.py "audio.mp3"
+python scripts/ags_voice_to_doodle.py "audio.mp3"
+python scripts/ags_bds_cli.py render --images parcel.jpg grid.jpg --bpm 120 --music nhac.mp3 --out video_bds.mp4
+```
 
-## 🛠️ Cách Sử Dụng Trong Claude Code / Terminal:
+## 🔌 MCP Server
+`mcp/ags_mcp_server.py` (stdio) mở 8 tool: `cut_silence`, `text_behind_person`, `editorial_sub`, `voice_to_kinetic`, `voice_to_doodle`, `bds_draft`, `bds_render`, `anti_slop_guard`. Mỗi tool trả về `output`, `exit_code`, `stderr_tail`, `stdout_tail`. Cấu hình cho Claude Code, Claude Desktop, Codex, Antigravity / Gemini, Cursor: xem [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md#phần-3-mcp-server).
 
-- **Cắt video thô:**
-  ```bash
-  python scripts/cut_silence.py "video_quay_tho.mp4"
-  ```
-
-- **Đặt chữ chìm sau người:**
-  ```bash
-  python scripts/text_behind_person.py "video.mp4" --text "90 NGÀY KIẾM 1 TỶ"
-  ```
-
-- **Làm phụ đề sang trọng & chuẩn âm thanh:**
-  ```bash
-  python scripts/editorial_sub.py "video.mp4"
-  ```
-
-- **Làm hoạt hình từ đoạn ghi âm:**
-  ```bash
-  python scripts/voice_to_kinetic.py "audio.mp3"
-  ```
-
-- **Làm video người que kể chuyện:**
-  ```bash
-  python scripts/voice_to_doodle.py "audio.mp3"
-  ```
+## 🧪 Kiểm Thử Engine BĐS
+```bash
+python tests/ags_test_bds_engine.py            # thư mục tạm, tự xoá
+python tests/ags_test_bds_engine.py --out kq/  # giữ ảnh/video/draft để xem
+```
 
 ---
-*Bản quyền phát triển: AgentSea Studio · 100% Clean-Room Architecture*
+
+## ⚖️ Giấy Phép
+Mã nguồn xem được (source-available), **chỉ dùng cá nhân, phi thương mại** — theo [AGS Personal Use License](LICENSE). Không phân phối lại, không bán, không dùng cho dịch vụ edit thu phí hay khoá học/sản phẩm trả phí khi chưa có văn bản cho phép. Cấp phép thương mại: liên hệ Agent Space (AGS). Thành phần bên thứ ba: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Copyright © 2026 Agent Space (AGS) / Teddy.

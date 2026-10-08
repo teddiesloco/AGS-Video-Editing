@@ -1,18 +1,23 @@
 ---
 name: ags-edit-hook
-description: "Chữ chìm sau người & Hook viral: AI tách người khỏi nền, đặt chữ tiêu đề to nổi bật chìm sau lưng và hiệu ứng âm thanh SFX."
+description: "AGS (Agent Space) — chữ chìm sau người: tách người khỏi nền bằng rembg (u2net_human_seg), đặt câu hook vàng viền đen sau lưng người nói trong vài giây đầu video."
 ---
 
-# /ags-edit-hook — Chữ Chìm Sau Người & Hook Viral
+# /ags-edit-hook — Chữ Chìm Sau Người
 
-Dành cho khi: Video đã cắt sẵn nhưng mở đầu đơn điệu, cần câu hook giật tít mạnh mẽ để giữ chân người xem trong 3 giây đầu.
+Dành cho khi: video đã cắt sẵn nhưng mở đầu đơn điệu, cần câu hook nổi bật để giữ chân người xem 3 giây đầu.
 
-## Cách dùng:
+## Cách dùng
+> Lệnh chạy từ thư mục gốc repo AGS Video Editing (hai cấp trên thư mục chứa file này) bằng Python của venv: macOS `./venv/bin/python`, Windows `venv\Scripts\python`.
 ```bash
-python scripts/text_behind_person.py <duong_dan_video> --text "CÂU HOOK NỔI BẬT" [--duration 5.0]
+python scripts/ags_text_behind_person.py <duong_dan_video> --text "CÂU HOOK NỔI BẬT" [--duration 5.0] [--out <video_xuat.mp4>]
 ```
+Mặc định xuất `<tên>_hook.mp4`.
 
-## Chức năng tự động:
-1. Nhận diện và tách lớp người bằng mô hình Human Matting (Rembg/U2Net).
-2. Tạo chữ vàng/trắng tương phản cao đặt tại vị trí 28% đỉnh màn hình (sau đầu/ngực).
-3. Ghép sandwich 3-layer trong FFmpeg: Video gốc -> Chữ Hook -> Lớp người đè lên trên.
+## Chức năng
+1. Tách lớp người từng khung hình bằng rembg `u2net_human_seg` (lần chạy đầu tự tải model ~170 MB).
+2. Chữ vàng viền đen, tự co cỡ cho vừa 90% bề ngang (tối đa 2 dòng), đặt ở 28% chiều cao (ngang đầu/ngực).
+3. Ghép 3 lớp trong FFmpeg: video gốc → chữ hook → lớp người đè lên trên, chỉ trong `--duration` giây đầu.
+4. Tự đọc metadata xoay của video quay điện thoại.
+
+Lưu ý: tách nền chạy bằng CPU nên chậm (vài giây cho mỗi khung hình 1080x1920; 3 giây video 30fps = 90 khung) — nên để `--duration` 2–3 giây. Âm thanh giữ nguyên bản gốc.

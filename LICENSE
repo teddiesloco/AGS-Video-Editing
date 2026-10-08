@@ -1,0 +1,112 @@
+AGENT SPACE (AGS) PERSONAL USE LICENSE (SOURCE-AVAILABLE)
+GIẤY PHÉP SỬ DỤNG CÁ NHÂN AGENT SPACE (AGS) — MÃ NGUỒN XEM ĐƯỢC
+
+Phần mềm / Software: AGS Video Editing — toàn bộ mã nguồn, script, skill, adapter,
+template, tài liệu và tệp đi kèm trong kho mã này.
+
+Copyright © 2026 Agent Space (AGS) / Teddy. Bảo lưu mọi quyền. All rights reserved.
+
+================================================================================
+PHẦN TIẾNG VIỆT
+================================================================================
+
+1. ĐỊNH NGHĨA
+   "Bên cấp phép" là Agent Space (AGS). "Phần mềm" là toàn bộ nội dung nêu trên.
+   "Bạn" là cá nhân tải về hoặc sử dụng Phần mềm.
+
+2. QUYỀN ĐƯỢC CẤP
+   Bên cấp phép cấp cho Bạn quyền cá nhân, không độc quyền, không được chuyển
+   nhượng và có thể bị thu hồi để tải về, cài đặt và chạy Phần mềm cho mục đích
+   sử dụng riêng, phi thương mại của chính Bạn. Mọi quyền không được nêu rõ tại
+   mục này đều thuộc về Bên cấp phép.
+
+3. HẠN CHẾ — Bạn KHÔNG được:
+   a) Phân phối lại, đăng lại hoặc tải lên lại Phần mềm (toàn bộ hay một phần),
+      kể cả tạo bản mirror hoặc đóng gói lại thành file zip / gói cài đặt khác;
+   b) Bán, cấp phép lại, cho thuê hoặc cho mượn Phần mềm;
+   c) Sử dụng Phần mềm vào bất kỳ mục đích thương mại nào khi chưa có văn bản
+      cho phép của Bên cấp phép — bao gồm dùng Phần mềm để cung cấp dịch vụ dựng /
+      edit video có thu phí, hoặc đưa Phần mềm vào khoá học, sản phẩm hay gói
+      dịch vụ trả phí;
+   d) Gỡ bỏ hoặc thay đổi thông báo bản quyền và giấy phép này;
+   e) Công bố hoặc phân phối bản đã chỉnh sửa (bản phái sinh) của Phần mềm.
+
+4. VỀ NỀN TẢNG GITHUB
+   Kho mã được đặt công khai trên GitHub. Điều khoản dịch vụ của GitHub cho phép
+   người dùng GitHub xem và fork (sao chép trong phạm vi GitHub) các kho mã công
+   khai. Điều đó không cấp thêm bất kỳ quyền nào khác ngoài các quyền tại Mục 2;
+   mọi hạn chế tại Mục 3 vẫn áp dụng, kể cả với bản fork.
+
+5. THÀNH PHẦN BÊN THỨ BA
+   FFmpeg, faster-whisper, rembg, OpenCV, Pillow, NumPy và các thư viện / model
+   khác mà Phần mềm gọi tới thuộc giấy phép riêng của chúng (xem
+   THIRD_PARTY_NOTICES.md). Giấy phép này không áp dụng cho các thành phần đó.
+
+6. KHÔNG BẢO ĐẢM
+   Phần mềm được cung cấp "NGUYÊN TRẠNG", không kèm bất kỳ bảo đảm nào, dù rõ ràng
+   hay ngụ ý, bao gồm bảo đảm về khả năng thương mại, sự phù hợp cho một mục đích
+   cụ thể và không vi phạm. Bên cấp phép không chịu trách nhiệm về bất kỳ khiếu
+   nại, thiệt hại hay trách nhiệm pháp lý nào phát sinh từ việc sử dụng Phần mềm.
+
+7. CHẤM DỨT
+   Quyền của Bạn theo giấy phép này tự động chấm dứt khi Bạn vi phạm bất kỳ điều
+   khoản nào. Khi chấm dứt, Bạn phải ngừng sử dụng và xoá mọi bản sao Phần mềm.
+
+8. CẤP PHÉP THƯƠNG MẠI
+   Để sử dụng thương mại, phân phối hoặc tích hợp Phần mềm vào sản phẩm / dịch vụ,
+   hãy liên hệ Agent Space (AGS).
+
+Nếu bản tiếng Việt và bản tiếng Anh có khác biệt, bản tiếng Việt được ưu tiên.
+
+================================================================================
+ENGLISH VERSION
+================================================================================
+
+1. DEFINITIONS
+   "Licensor" means Agent Space (AGS). "Software" means all content listed above.
+   "You" means the individual who downloads or uses the Software.
+
+2. LICENSE GRANT
+   The Licensor grants You a personal, non-exclusive, non-transferable, revocable
+   right to download, install and run the Software solely for Your own
+   non-commercial use. All rights not expressly granted in this section are
+   reserved by the Licensor.
+
+3. RESTRICTIONS — You may NOT:
+   a) Redistribute, re-publish or re-upload the Software (in whole or in part),
+      including creating mirrors or re-packaged zip files / installers;
+   b) Sell, sublicense, rent or lend the Software;
+   c) Use the Software for any commercial purpose without the Licensor's prior
+      written permission — including using it to deliver paid video editing
+      services, or bundling it in paid courses, products or service packages;
+   d) Remove or alter any copyright notice or this license;
+   e) Publish or distribute modified versions (derivative works) of the Software.
+
+4. GITHUB
+   The repository is public on GitHub. GitHub's Terms of Service allow GitHub
+   users to view and fork public repositories within GitHub. That does not grant
+   any rights beyond those in Section 2; all restrictions in Section 3 continue to
+   apply, including to forks.
+
+5. THIRD-PARTY COMPONENTS
+   FFmpeg, faster-whisper, rembg, OpenCV, Pillow, NumPy and other libraries /
+   models the Software invokes remain under their own licenses (see
+   THIRD_PARTY_NOTICES.md). This license does not apply to them.
+
+6. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+   LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+   USE OF THE SOFTWARE.
+
+7. TERMINATION
+   Your rights under this license terminate automatically if You breach any of
+   its terms. Upon termination You must stop using and delete all copies of the
+   Software.
+
+8. COMMERCIAL LICENSING
+   For commercial use, redistribution or integration into products / services,
+   contact Agent Space (AGS).
+
+If the Vietnamese and English versions differ, the Vietnamese version prevails.

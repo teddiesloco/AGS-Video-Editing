@@ -1,43 +1,35 @@
 ---
 name: ags-video-editing
-description: "Bộ 5 Skill Edit Video Tự Động độc quyền AgentSea: Cắt thô lọc từ thừa (/ags-edit-az), Chữ chìm sau người (/ags-edit-hook), Sub tạp chí sang trọng (/ags-edit-editorial), Hoạt hình chữ 2D (/ags-voice-kinetic), và Người que nét chì (/ags-voice-doodle). Hỗ trợ cả macOS và Windows."
+description: "AGS (Agent Space) — bộ 6 skill edit video tự động (macOS & Windows): cắt khoảng lặng & từ đệm (/ags-edit-az), chữ chìm sau người (/ags-edit-hook), phụ đề tạp chí -14 LUFS (/ags-edit-editorial), ghi âm thành chữ 2D (/ags-voice-kinetic), ghi âm thành người que nét chì (/ags-voice-doodle), dựng video Bất Động Sản + draft CapCut thử nghiệm (/ags-edit-bds). Có harness Anti-AI-Slop và MCP server."
 ---
 
-# AGS-Video-Editing — Bộ Skill Edit Video Tự Động Đa Năng
+# AGS Video Editing — Bộ Skill Edit Video Tự Động của AGS (Agent Space)
 
-Bộ công cụ tự động hóa hậu kỳ video hoàn chỉnh cho nhà sáng tạo nội dung và doanh nghiệp:
+Mọi lệnh chạy từ thư mục gốc repo. Python: macOS `./venv/bin/python`, Windows `venv\Scripts\python` (sau khi chạy installer).
 
-## Danh Sách 5 Skill:
+## 6 Skill
+1. **/ags-edit-az** — `python scripts/ags_cut_silence.py <video> [--min-silence 0.4]`
+   Bỏ khoảng lặng dài và từ đệm ("ờ, à, ừm"), cắt chính xác từng khung hình, chuẩn -14 LUFS, giữ khung hình gốc.
+2. **/ags-edit-hook** — `python scripts/ags_text_behind_person.py <video> --text "<CÂU HOOK>" [--duration 5]`
+   Tách người bằng rembg, đặt câu hook vàng viền đen chìm sau lưng người nói.
+3. **/ags-edit-editorial** — `python scripts/ags_editorial_sub.py <video>`
+   Phụ đề Serif phong cách tạp chí theo đúng kích thước video, chuẩn âm lượng -14 LUFS.
+4. **/ags-voice-kinetic** — `python scripts/ags_voice_to_kinetic.py <audio>`
+   File ghi âm → video chữ 2D bật nảy 1080x1920, khớp thời gian giọng nói.
+5. **/ags-voice-doodle** — `python scripts/ags_voice_to_doodle.py <audio>`
+   File ghi âm → video người que nét chì trên giấy kraft 1080x1920.
+6. **/ags-edit-bds** — `python scripts/ags_bds_cli.py <draft|render|parcel|subdivision|ticker|beats|prompt>`
+   Video Bất Động Sản theo 6 bước (phân loại tư liệu → công thức → asset → draft CapCut thử nghiệm hoặc render MP4 → kiểm định → bàn giao). Chi tiết: `skills/ags-edit-bds/SKILL.md`.
 
-1. **/ags-edit-az** `<video>`:
-   - Tự động cắt bỏ khoảng im lặng & từ đệm vấp ("ờ, à, ừm").
-   - Xuất bản dọc 9:16 (TikTok/Reels/Shorts) và ngang 16:9 (YouTube).
+## Quy tắc bắt buộc
+- Gọi script có sẵn; không tự viết lệnh FFmpeg dài.
+- Sau mỗi lần render: `python harness/ags_anti_slop_guard.py <video>` — exit `0` mới bàn giao; exit `2` phải đọc và xử lý cảnh báo; exit `1` là lỗi.
+- Báo kết quả ngắn gọn: `[Video đầu ra] -> [Thời lượng] -> [LUFS] -> [Kết quả guard]`.
 
-2. **/ags-edit-hook** `<video> --text "<CÂU HOOK>"`:
-   - Tách người khỏi nền bằng AI Human Matting.
-   - Đặt chữ tiêu đề to nổi bật chìm sau lưng người nói.
+## MCP
+`mcp/ags_mcp_server.py` (stdio, cần `requirements-mcp.txt`): tool `cut_silence`, `text_behind_person`, `editorial_sub`, `voice_to_kinetic`, `voice_to_doodle`, `bds_draft`, `bds_render`, `anti_slop_guard`.
 
-3. **/ags-edit-editorial** `<video>`:
-   - Sub chuẩn tạp chí nét Serif thanh mảnh, tự né khuôn mặt.
-   - Chuẩn hóa âm thanh đạt chuẩn phát thanh `-14 LUFS`.
+## Cài đặt
+- macOS: `./CAI-DAT-MAC.sh` · Windows: `CAI-DAT-WIN.bat`
 
-4. **/ags-voice-kinetic** `<audio.mp3>`:
-   - Biến file ghi âm giọng nói thành video 2D chữ nhảy hiện đại.
-
-5. **/ags-voice-doodle** `<audio.mp3>`:
-   - Biến file ghi âm thành video hoạt hình người que nét chì trên nền giấy kraft nâu.
-
-
----
-
-## 🛡️ Anti-AI-Slop Quality Gate:
-Chạy kiểm định chất lượng bắt buộc sau mỗi lần render video:
-```bash
-python harness/anti_slop_guard.py <duong_dan_video>
-```
-Tự động bắt lỗi: Lệch âm hình (A/V sync), phụ đề ảo giác/lặp từ, âm lượng không đạt chuẩn broadcast -14 LUFS.
----
-
-## Cài đặt nhanh (1-Click):
-- **Trên Mac:** Mở Terminal chạy `./CAI-DAT-MAC.sh`
-- **Trên Windows:** Bấm đúp chạy `CAI-DAT-WIN.bat`
+Giấy phép: AGS Personal Use License — chỉ dùng cá nhân, phi thương mại (xem `LICENSE`).
