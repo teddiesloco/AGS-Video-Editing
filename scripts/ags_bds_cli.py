@@ -2,11 +2,11 @@
 """
 AGS (Agent Space) Video Editing: CLI dựng video Bất Động Sản
   draft        Sinh draft CapCut (thử nghiệm) từ clip/ảnh + chữ tiêu đề + nhạc.
-  render       Render slideshow MP4 9:16 trực tiếp bằng FFmpeg (Ken Burns, cắt theo beat).
+  render       Render slideshow MP4 9:16 trực tiếp bằng FFmpeg (Ken Burns, cắt theo beat, wipe, duck nhạc dưới giọng đọc).
   parcel       Ảnh viền ranh giới thửa đất phát sáng.
   subdivision  Ảnh lưới phân lô đổi màu theo trạng thái.
   ticker       Ảnh khung bản tin BĐS có thanh chữ.
-  beats        In mốc cắt theo BPM.
+  beats        In mốc cắt theo BPM cho trước hoặc BPM/beat dò từ file nhạc.
   prompt       In prompt AI hook (Tòa nhà rơi / Virtual Staging / Ngày sang đêm).
 """
 
@@ -15,15 +15,22 @@ import json
 import sys
 from pathlib import Path
 
-from bds import AgsCapCutDraft, AgsCinematicStyle, AgsDirectRenderer, AgsLandParcelStyle, capcut_drafts_dir
+from bds import (AgsCapCutDraft, AgsCinematicStyle, AgsDirectRenderer, AgsLandParcelStyle, beat_durations,
+                 capcut_drafts_dir, detect_beats)
+from bds.ags_direct_renderer import TRANSITIONS
 from bds.ags_style_cinematic import HOOK_PROMPTS
 
 
-def clip_seconds(args):
-    """Thời lượng mỗi clip: --bpm/--beat-step (cắt theo beat) hoặc --seconds."""
+def clip_durations(args, count):
+    """([thời lượng từng clip], bpm): --auto-beat (dò beat từ --music), --bpm/--beat-step, hoặc --seconds."""
+    if args.auto_beat:
+        if not args.music:
+            raise ValueError("--auto-beat cần --music")
+        bpm, beats = detect_beats(args.music)
+        return beat_durations(beats, count, args.beat_step), bpm
     if args.bpm:
-        return AgsCinematicStyle(args.bpm).beat_interval * args.beat_step
-    return args.seconds
+        return [AgsCinematicStyle(args.bpm).beat_interval * args.beat_step] * count, args.bpm
+    return [args.seconds] * count, None
 
 
 def parse_points(text):
@@ -39,8 +46,8 @@ def parse_points(text):
 def cmd_draft(args):
     parent = capcut_drafts_dir() if args.capcut else Path(args.out)
     draft = AgsCapCutDraft(args.name, args.width, args.height, args.fps)
-    seconds = clip_seconds(args)
-    for clip in args.clips:
+    durations, _ = clip_durations(args, len(args.clips))
+    for clip, seconds in zip(args.clips, durations):
         draft.add_clip(clip, duration=seconds)
     total = draft.track_end("video")
     if args.title:
@@ -51,11 +58,12 @@ def cmd_draft(args):
 
 
 def cmd_render(args):
-    seconds = clip_seconds(args) or 2.0
+    durations, bpm = clip_durations(args, len(args.images))
     renderer = AgsDirectRenderer(args.width, args.height, args.fps)
-    out = renderer.render_image_slideshow(args.images, [seconds] * len(args.images), args.out, args.music)
-    print(json.dumps({"output": out, "slides": len(args.images), "seconds_per_slide": round(seconds, 3)},
-                     ensure_ascii=False))
+    out = renderer.render_image_slideshow(args.images, durations, args.out, args.music, args.voice,
+                                          args.transition, args.transition_seconds)
+    print(json.dumps({"output": out, "slides": len(args.images), "bpm": bpm,
+                      "seconds_per_slide": [round(d, 3) for d in durations]}, ensure_ascii=False))
 
 
 def cmd_parcel(args):
@@ -75,6 +83,13 @@ def cmd_ticker(args):
 
 
 def cmd_beats(args):
+    if args.music:
+        bpm, beats = detect_beats(args.music)
+        cuts = beats[args.beat_step::args.beat_step]
+        print(json.dumps({"bpm": bpm, "beat_step": args.beat_step, "beats": beats, "cuts": cuts}, ensure_ascii=False))
+        return
+    if args.duration is None:
+        raise ValueError("--bpm cần --duration")
     cuts = AgsCinematicStyle(args.bpm).calculate_beat_cuts(args.duration, args.beat_step)
     print(json.dumps({"bpm": args.bpm, "beat_step": args.beat_step, "cuts": cuts}, ensure_ascii=False))
 
@@ -95,6 +110,7 @@ def main(argv=None):
     def timing_opts(p, default_seconds):
         p.add_argument("--seconds", type=float, default=default_seconds, help="Thời lượng mỗi clip/ảnh (giây)")
         p.add_argument("--bpm", type=float, default=0, help="BPM nhạc: thời lượng mỗi clip = beat-step beat")
+        p.add_argument("--auto-beat", action="store_true", help="Dò BPM và mốc beat từ --music, cắt đúng beat")
         p.add_argument("--beat-step", type=int, default=4, help="Số beat mỗi lần cắt (2/4/8)")
 
     p = sub.add_parser("draft", help="Sinh draft CapCut (thử nghiệm)")
@@ -113,7 +129,11 @@ def main(argv=None):
     p = sub.add_parser("render", help="Render slideshow MP4 9:16 bằng FFmpeg")
     p.add_argument("--images", nargs="+", required=True)
     timing_opts(p, 2.0)
-    p.add_argument("--music", default=None)
+    p.add_argument("--music", default=None, help="Nhạc nền")
+    p.add_argument("--voice", default=None, help="Giọng đọc; có cả --music thì nhạc tự nhỏ xuống khi có giọng")
+    p.add_argument("--transition", choices=list(TRANSITIONS), default="cut",
+                   help="cut = cắt cứng; wipe = quét trái → phải (ảnh trước/sau)")
+    p.add_argument("--transition-seconds", type=float, default=0.5, help="Thời gian wipe (giây)")
     p.add_argument("--out", required=True, help="File MP4 đầu ra")
     frame_opts(p)
     p.add_argument("--fps", type=int, default=30)
@@ -142,10 +162,12 @@ def main(argv=None):
     frame_opts(p)
     p.set_defaults(func=cmd_ticker)
 
-    p = sub.add_parser("beats", help="Mốc cắt theo BPM")
-    p.add_argument("--bpm", type=float, required=True)
+    p = sub.add_parser("beats", help="Mốc cắt theo BPM, hoặc dò BPM/beat từ file nhạc")
+    source = p.add_mutually_exclusive_group(required=True)
+    source.add_argument("--bpm", type=float, help="BPM cho trước (cần --duration)")
+    source.add_argument("--music", help="File nhạc để dò BPM và mốc beat")
     p.add_argument("--beat-step", type=int, default=4)
-    p.add_argument("--duration", type=float, required=True, help="Tổng thời lượng (giây)")
+    p.add_argument("--duration", type=float, help="Tổng thời lượng (giây), dùng với --bpm")
     p.set_defaults(func=cmd_beats)
 
     p = sub.add_parser("prompt", help="Prompt AI hook")

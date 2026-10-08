@@ -2,7 +2,8 @@
 """
 AGS (Agent Space) Video Editing: Chữ chìm sau người (Text Behind Person)
 Tách lớp người bằng rembg (u2net_human_seg) rồi ghép sandwich 3 lớp trong FFmpeg:
-video gốc -> chữ hook -> lớp người đè lên trên.
+video gốc -> chữ hook -> lớp người đè lên trên. Chữ hiện đủ độ đậm ngay từ khung 0 (không mờ dần),
+chuẩn hoá Unicode NFC và nằm trong vùng an toàn (ags_common.safe_box).
 """
 
 import argparse
@@ -11,21 +12,23 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from ags_common import display_size, fit_text, run_cmd
+from ags_common import display_size, fit_text, run_cmd, safe_box
 
 
 def create_text_banner(text, width, height, output_image_path, color="yellow"):
-    """Ảnh PNG trong suốt chứa câu hook; tự co chữ để vừa 90% bề ngang, tối đa 2 dòng."""
+    """Ảnh PNG trong suốt chứa câu hook: tối đa 2 dòng, tự co chữ cho vừa bề ngang vùng an toàn."""
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font, lines = fit_text(draw, text, "bold", max_width=width * 0.9, max_lines=2,
+    x0, y0, x1, y1 = safe_box(width, height)
+    font, lines = fit_text(draw, text, "bold", max_width=x1 - x0, max_lines=2,
                            size=int(width * 0.10), min_size=int(width * 0.05))
     text_color = (255, 215, 0, 255) if color == "yellow" else (255, 255, 255, 255)
     stroke = max(3, font.size // 18)
     line_height = int(font.size * 1.15)
-    y = int(height * 0.28)  # 28% từ đỉnh: ngang đầu/ngực người nói
+    # 28% từ đỉnh (ngang đầu/ngực người nói), luôn trong vùng an toàn
+    y = min(max(int(height * 0.28), y0), y1 - line_height * len(lines))
     for line in lines:
-        x = (width - draw.textlength(line, font=font)) / 2
+        x = x0 + (x1 - x0 - draw.textlength(line, font=font)) / 2
         draw.text((x, y), line, font=font, fill=text_color, stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
         y += line_height
     img.save(output_image_path)

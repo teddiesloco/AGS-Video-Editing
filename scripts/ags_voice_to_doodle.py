@@ -12,7 +12,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from ags_common import encode_frames, fit_text, group_words, media_duration, timeline_frames, transcribe_words
+from ags_common import (encode_frames, fit_text, group_words, media_duration, safe_box, timeline_frames,
+                        transcribe_words)
 
 WIDTH, HEIGHT, FPS = 1080, 1920, 30
 INK = "#2A241C"
@@ -72,13 +73,14 @@ def draw_kraft_doodle_frame(text, pose_idx=0, width=WIDTH, height=HEIGHT):
         draw.line([head_x, crotch_y, head_x - 80, crotch_y + 180], fill=INK, width=5)
         draw.line([head_x, crotch_y, head_x + 80, crotch_y + 180], fill=INK, width=5)
 
-    # 4. Phụ đề: tối đa 3 dòng, đặt giữa mặt trời và đầu nhân vật (trong vùng an toàn 9:16)
+    # 4. Phụ đề: tối đa 3 dòng, quanh y=680 (giữa mặt trời và đầu nhân vật), luôn trong vùng an toàn
     if text:
-        font, lines = fit_text(draw, text, "serif", max_width=width - 180, max_lines=3, size=60, min_size=40)
+        x0, y0, x1, y1 = safe_box(width, height)
+        font, lines = fit_text(draw, text, "serif", max_width=x1 - x0, max_lines=3, size=60, min_size=40)
         line_h = int(font.size * 1.3)
-        y = 680 - len(lines) * line_h // 2
+        y = min(max(680 - len(lines) * line_h // 2, y0), y1 - len(lines) * line_h)
         for line in lines:
-            draw.text(((width - draw.textlength(line, font=font)) / 2, y), line, font=font, fill=INK)
+            draw.text((x0 + (x1 - x0 - draw.textlength(line, font=font)) / 2, y), line, font=font, fill=INK)
             y += line_h
     return img
 

@@ -1,23 +1,34 @@
 ---
 name: ags-edit-hook
-description: "AGS (Agent Space) — chữ chìm sau người: tách người khỏi nền bằng rembg (u2net_human_seg), đặt câu hook vàng viền đen sau lưng người nói trong vài giây đầu video."
+description: "AGS (Agent Space) — chữ chìm sau người (text-behind-person): tách người khỏi nền bằng rembg, đặt câu hook vàng viền đen sau lưng người nói, hiện đủ độ đậm ngay từ khung đầu tiên, nằm trong vùng an toàn 9:16. Dùng khi video đã cắt xong nhưng mở đầu đơn điệu, cần câu hook giữ chân người xem trong 3 giây đầu."
+compatibility: "Cần Python 3.10+, FFmpeg và thư viện trong requirements.txt; lần đầu tải model rembg u2net_human_seg (~170 MB, cần Internet)."
+license: "PolyForm Strict 1.0.0 — xem LICENSE"
 ---
 
 # /ags-edit-hook — Chữ Chìm Sau Người
 
-Dành cho khi: video đã cắt sẵn nhưng mở đầu đơn điệu, cần câu hook nổi bật để giữ chân người xem 3 giây đầu.
+> Lệnh chạy từ thư mục gốc repo AGS Video Editing (hai cấp trên file này) — hoặc từ thư mục của skill nếu dùng bản zip
+> (đã kèm `scripts/`, `harness/`) — bằng Python có đủ thư viện (venv của repo: macOS `./venv/bin/python`, Windows `venv\Scripts\python`).
 
-## Cách dùng
-> Lệnh chạy từ thư mục gốc repo AGS Video Editing (hai cấp trên thư mục chứa file này) bằng Python của venv: macOS `./venv/bin/python`, Windows `venv\Scripts\python`.
 ```bash
-python scripts/ags_text_behind_person.py <duong_dan_video> --text "CÂU HOOK NỔI BẬT" [--duration 5.0] [--out <video_xuat.mp4>]
+python scripts/ags_text_behind_person.py <video> --text "CÂU HOOK NỔI BẬT" [--duration 3] [--out <video_xuat.mp4>]
 ```
 Mặc định xuất `<tên>_hook.mp4`.
 
 ## Chức năng
-1. Tách lớp người từng khung hình bằng rembg `u2net_human_seg` (lần chạy đầu tự tải model ~170 MB).
-2. Chữ vàng viền đen, tự co cỡ cho vừa 90% bề ngang (tối đa 2 dòng), đặt ở 28% chiều cao (ngang đầu/ngực).
-3. Ghép 3 lớp trong FFmpeg: video gốc → chữ hook → lớp người đè lên trên, chỉ trong `--duration` giây đầu.
-4. Tự đọc metadata xoay của video quay điện thoại.
+1. Tách lớp người từng khung bằng rembg `u2net_human_seg`.
+2. Chữ vàng viền đen, tối đa 2 dòng, tự co cỡ cho vừa bề ngang vùng an toàn (`ags_common.safe_box`), đặt ngang
+   đầu/ngực (~28% chiều cao); chữ chuẩn hoá Unicode NFC nên dấu tiếng Việt không bị tách.
+3. Ghép 3 lớp trong FFmpeg: video gốc → chữ hook → lớp người đè lên, trong `--duration` giây đầu; chữ hiện đủ độ đậm
+   từ khung 0 (không mờ dần) — TikTok khuyên đưa thông điệp chính vào 3 giây đầu.
+4. Tự đọc metadata xoay của video quay điện thoại. Âm thanh giữ nguyên bản gốc.
 
-Lưu ý: tách nền chạy bằng CPU nên chậm (vài giây cho mỗi khung hình 1080x1920; 3 giây video 30fps = 90 khung) — nên để `--duration` 2–3 giây. Âm thanh giữ nguyên bản gốc.
+Tách nền chạy bằng CPU nên chậm (khoảng 1 phút cho 2 giây video 1080x1920 trên máy thử) — để `--duration` 2–3 giây.
+
+## Kiểm định (bắt buộc)
+```bash
+python harness/ags_anti_slop_guard.py <video_xuat.mp4> --contact-sheet <video_xuat>_sheet.jpg
+```
+Ô `#0 (khung 0)` của contact sheet phải thấy rõ câu hook. Exit `0` đạt · `2` cảnh báo · `1` lỗi.
+Âm lượng giữ như bản gốc nên có thể bị cảnh báo LUFS — chạy thêm `/ags-edit-editorial` để chuẩn -14 LUFS.
+Vòng soát: `harness/QUY-TRINH-KIEM-DINH.md`.

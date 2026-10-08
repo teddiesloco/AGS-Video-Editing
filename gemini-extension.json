@@ -1,0 +1,14 @@
+{
+  "name": "ags-video-editing",
+  "version": "1.2.0",
+  "description": "AGS (Agent Space) — edit video tự động: cắt lặng, phụ đề karaoke, reframe 9:16 bám mặt, cắt short, video BĐS, harness kiểm định.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "ags": {
+      "command": "${extensionPath}${/}venv${/}bin${/}python",
+      "args": ["${extensionPath}${/}mcp${/}ags_mcp_server.py"],
+      "cwd": "${extensionPath}",
+      "timeout": 1800000
+    }
+  }
+}

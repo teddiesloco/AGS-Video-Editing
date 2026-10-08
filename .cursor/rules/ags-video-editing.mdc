@@ -1,0 +1,10 @@
+---
+description: AGS Video Editing — dựng/edit video bằng script Python + FFmpeg của repo (cắt lặng, phụ đề karaoke, reframe 9:16, cắt short, video BĐS) và kiểm định bằng harness trước khi bàn giao.
+alwaysApply: false
+---
+
+- Đọc @AGENTS.md trước khi chạy lệnh video; làm đúng mục "Quy tắc bắt buộc" trong đó.
+- Ưu tiên tool của MCP server `ags` (cấu hình ở `.cursor/mcp.json`); không có thì chạy script bằng `./venv/bin/python`
+  (Windows `venv\Scripts\python`). Không tự viết lệnh FFmpeg dài.
+- Sau mỗi lần render: `python harness/ags_anti_slop_guard.py <video> --contact-sheet <video>_sheet.jpg`, mở ảnh soát theo
+  @harness/QUY-TRINH-KIEM-DINH.md; exit `0` mới bàn giao.

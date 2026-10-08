@@ -16,9 +16,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import numpy as np  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 
-from bds import AgsCapCutDraft, AgsCinematicStyle, AgsDirectRenderer, AgsLandParcelStyle  # noqa: E402
+from bds import (AgsCapCutDraft, AgsCinematicStyle, AgsDirectRenderer, AgsLandParcelStyle,  # noqa: E402
+                 beat_durations, detect_beats)
 from bds.ags_capcut_draft import TEMPLATE  # noqa: E402
 
 CLI = ROOT / "scripts" / "ags_bds_cli.py"
@@ -47,6 +49,8 @@ def make_media(out):
            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", video)
     music = out / "music.wav"
     ffmpeg("-f", "lavfi", "-i", "sine=frequency=220:duration=8", music)
+    voice = out / "voice.wav"  # "giọng" giả: tiếng 300 Hz bật/tắt mỗi 0.5 s
+    ffmpeg("-f", "lavfi", "-i", "sine=frequency=300:duration=8", "-af", "volume='lt(mod(t,1),0.5)':eval=frame", voice)
     # Ảnh nền ngang 1920x1080 có lưới + vòng tròn: lộ ngay nếu bị bóp méo
     base = out / "satellite_bg.jpg"
     img = Image.new("RGB", (1920, 1080), (34, 60, 48))
@@ -58,7 +62,22 @@ def make_media(out):
     for cx in (660, 960, 1260):
         draw.ellipse([cx - 120, 420, cx + 120, 660], outline=(230, 200, 120), width=6)
     img.save(base, quality=95)
-    return video, music, base
+    return video, music, voice, base
+
+
+def click_track(path, bpm=120.0, first=0.3, seconds=12.0, sr=22050):
+    """Nhạc thử có beat biết trước: kick mỗi beat + pad hợp âm."""
+    t = np.arange(int(seconds * sr)) / sr
+    y = 0.08 * (np.sin(2 * np.pi * 220 * t) + np.sin(2 * np.pi * 330 * t))
+    beats = np.arange(first, seconds - 0.2, 60 / bpm)
+    k = np.arange(int(0.12 * sr)) / sr
+    for b in beats:
+        i = int(b * sr)
+        y[i:i + len(k)] += 0.9 * np.sin(2 * np.pi * (60 + 90 * np.exp(-k * 40)) * k) * np.exp(-k * 25)
+    pcm = (y / np.abs(y).max() * 0.8 * 32767).astype("<i2")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(sr), "-ac", "1", "-i", "-",
+                    str(path)], input=pcm.tobytes(), check=True)
+    return beats
 
 
 def same_keys(label, obj, ref):
@@ -165,6 +184,26 @@ def test_renderer(out, slides, music):
     return mp4
 
 
+def test_beats(out):
+    truth = click_track(out / "beats.wav")
+    bpm, beats = detect_beats(str(out / "beats.wav"))
+    assert abs(bpm - 120) < 1, bpm
+    errors = [min(abs(b - t) for b in beats) for t in truth]
+    assert max(errors) < 0.02, max(errors)
+    durations = beat_durations(beats, 6, 4)
+    assert abs(durations[0] - beats[4]) < 1e-6 and all(abs(d - 2.0) < 0.02 for d in durations[1:]), durations
+
+
+def test_renderer_wipe_voice(out, slides, music, voice):
+    mp4 = AgsDirectRenderer(1080, 1920, 30).render_image_slideshow(
+        slides, [2.0] * len(slides), str(out / "bds_wipe_voice.mp4"), str(music), str(voice), "wipe", 0.5)
+    info = probe(mp4)
+    a = next(s for s in info["streams"] if s["codec_type"] == "audio")
+    assert abs(float(info["format"]["duration"]) - 2.0 * len(slides)) < 0.2, info["format"]["duration"]
+    assert a["sample_rate"] == "48000", a["sample_rate"]
+    return mp4
+
+
 def run_cli(*args):
     res = subprocess.run([sys.executable, str(CLI), *[str(a) for a in args]], capture_output=True, text=True)
     assert res.returncode == 0, f"CLI {args[0]} lỗi: {res.stderr}"
@@ -173,6 +212,7 @@ def run_cli(*args):
 
 def test_cli(out, video, music, base):
     assert run_cli("beats", "--bpm", 128, "--beat-step", 8, "--duration", 15)["cuts"] == [3.75, 7.5, 11.25, 15.0]
+    assert abs(run_cli("beats", "--music", out / "beats.wav")["bpm"] - 120) < 1
     assert run_cli("prompt", "--type", "virtual_staging", "--name", "Mẫu", "--location", "Hà Nội")["sound_fx"]
     lots_file = out / "lots.json"
     lots_file.write_text(json.dumps(LOTS, ensure_ascii=False), encoding="utf-8")
@@ -197,12 +237,15 @@ def main():
     with tempfile.TemporaryDirectory(prefix="ags_test_bds_") as tmp:
         out = Path(args.out).resolve() if args.out else Path(tmp)
         out.mkdir(parents=True, exist_ok=True)
-        video, music, base = make_media(out)
+        video, music, voice, base = make_media(out)
         steps = [
             ("CapCut draft (schema + tham chiếu)", lambda: test_capcut_draft(out, video, music, base)),
             ("Cinematic: beat cuts + prompt", test_cinematic),
+            ("Dò BPM/beat từ file nhạc", lambda: test_beats(out)),
             ("Đất nền: polygon / phân lô / ticker", lambda: test_land_parcel(out, base)),
             ("Render slideshow FFmpeg", lambda: test_renderer(out, test_land_parcel(out, base), music)),
+            ("Render wipe + giọng đọc (duck nhạc)",
+             lambda: test_renderer_wipe_voice(out, test_land_parcel(out, base), music, voice)),
             ("CLI: beats/prompt/parcel/subdivision/ticker/draft/render", lambda: test_cli(out, video, music, base)),
         ]
         for i, (label, fn) in enumerate(steps, 1):

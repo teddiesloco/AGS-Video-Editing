@@ -26,3 +26,6 @@ env/
 output/
 out/
 drafts/
+
+# Zip skill dựng bởi scripts/ags_build_skill_zips.py — không commit
+dist/

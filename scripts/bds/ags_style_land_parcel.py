@@ -2,8 +2,9 @@
 AGS (Agent Space) — Công thức Đất nền (GIS)
 - Viền ranh giới thửa đất phát sáng (neon) trên ảnh vệ tinh / flycam.
 - Lưới phân lô đổi màu theo trạng thái: Đã bán (đỏ) | Còn trống (xanh) | Đang cọc (vàng).
-- Thanh ticker bản tin BĐS (đặt trong vùng an toàn 9:16, không dùng emoji).
-Tọa độ polygon / ô lô tính theo khung đầu ra (mặc định 1080x1920); ảnh nền được cắt cho vừa khung, không bóp méo.
+- Thanh ticker bản tin BĐS (không dùng emoji).
+Nhãn thửa đất và chữ ticker nằm trong vùng an toàn (ags_common.safe_box). Tọa độ polygon / ô lô tính theo khung đầu ra
+(mặc định 1080x1920); ảnh nền được cắt cho vừa khung, không bóp méo.
 """
 
 from pathlib import Path
@@ -11,7 +12,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
-from ags_common import fit_text, load_font
+from ags_common import fit_text, safe_box
 
 STATUS = {
     "SOLD": ((220, 38, 38, 190), "ĐÃ BÁN"),
@@ -64,15 +65,16 @@ class AgsLandParcelStyle:
         draw.line(ring, fill=(*color, 255), width=6, joint="curve")
         draw.line(ring, fill=(255, 255, 255, 255), width=2, joint="curve")
 
-        # Nhãn ở tâm polygon, giữ trong khung hình
-        font, lines = fit_text(draw, label, "bold", max_width=self.width * 0.8, max_lines=2, size=34, min_size=22)
+        # Nhãn ở tâm polygon, giữ trong vùng an toàn
+        sx0, sy0, sx1, sy1 = safe_box(self.width, self.height)
+        font, lines = fit_text(draw, label, "bold", max_width=sx1 - sx0 - 40, max_lines=2, size=34, min_size=22)
         line_h = int(font.size * 1.25)
         box_w = max(draw.textlength(l, font=font) for l in lines) + 40
         box_h = len(lines) * line_h + 24
         cx = sum(p[0] for p in points) / len(points)
         cy = sum(p[1] for p in points) / len(points)
-        x0 = min(max(cx - box_w / 2, 20), self.width - box_w - 20)
-        y0 = min(max(cy - box_h / 2, 20), self.height - box_h - 20)
+        x0 = min(max(cx - box_w / 2, sx0), sx1 - box_w)
+        y0 = min(max(cy - box_h / 2, sy0), sy1 - box_h)
         draw.rounded_rectangle([x0, y0, x0 + box_w, y0 + box_h], radius=12,
                                fill=(15, 23, 42, 235), outline=(*color, 255), width=3)
         y = y0 + 12
@@ -103,19 +105,20 @@ class AgsLandParcelStyle:
         return _save_jpeg(Image.alpha_composite(base, overlay), output_path)
 
     def render_news_ticker_bar(self, base_img_path: str, headline: str, ticker_text: str, output_path: str) -> str:
-        """Khung bản tin: thanh đỏ (tiêu đề) + thanh xanh đậm (nội dung, tối đa 2 dòng) ở ~2/3 chiều cao."""
+        """Khung bản tin: thanh đỏ (tiêu đề) + thanh xanh đậm (nội dung, tối đa 2 dòng), đáy thanh chạm đáy vùng an toàn;
+        thanh màu tràn hết bề ngang, chữ nằm trong vùng an toàn."""
         base = self._base(base_img_path)
         overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
-        pad = 40
-        max_w = self.width - 2 * pad - 40
+        sx0, _, sx1, sy1 = safe_box(self.width, self.height)
+        pad = sx0
 
-        f_head, head_lines = fit_text(draw, f"BẢN TIN BĐS: {headline.upper()}", "bold", max_w, 1, 34, 20)
-        f_tick, tick_lines = fit_text(draw, f"THÔNG TIN QUY HOẠCH: {ticker_text}", "regular", self.width - 2 * pad, 2, 30, 20)
+        f_head, head_lines = fit_text(draw, f"BẢN TIN BĐS: {headline.upper()}", "bold", sx1 - sx0 - 50, 1, 34, 20)
+        f_tick, tick_lines = fit_text(draw, f"THÔNG TIN QUY HOẠCH: {ticker_text}", "regular", sx1 - sx0, 2, 30, 20)
         head_h = int(f_head.size * 1.9)
         tick_line_h = int(f_tick.size * 1.35)
         tick_h = len(tick_lines) * tick_line_h + 36
-        bar_top = int(self.height * 0.64)
+        bar_top = sy1 - head_h - tick_h
 
         draw.rectangle([0, bar_top, self.width, bar_top + head_h], fill=(225, 29, 72, 245))
         draw.rectangle([0, bar_top + head_h, self.width, bar_top + head_h + tick_h], fill=(15, 23, 42, 245))

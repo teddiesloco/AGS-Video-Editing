@@ -1,112 +1,106 @@
-AGENT SPACE (AGS) PERSONAL USE LICENSE (SOURCE-AVAILABLE)
-GIẤY PHÉP SỬ DỤNG CÁ NHÂN AGENT SPACE (AGS) — MÃ NGUỒN XEM ĐƯỢC
+Required Notice: Copyright © 2026 Agent Space (AGS)
 
-Phần mềm / Software: AGS Video Editing — toàn bộ mã nguồn, script, skill, adapter,
-template, tài liệu và tệp đi kèm trong kho mã này.
+# PolyForm Strict License 1.0.0
 
-Copyright © 2026 Agent Space (AGS) / Teddy. Bảo lưu mọi quyền. All rights reserved.
+<https://polyformproject.org/licenses/strict/1.0.0>
 
-================================================================================
-PHẦN TIẾNG VIỆT
-================================================================================
+## Acceptance
 
-1. ĐỊNH NGHĨA
-   "Bên cấp phép" là Agent Space (AGS). "Phần mềm" là toàn bộ nội dung nêu trên.
-   "Bạn" là cá nhân tải về hoặc sử dụng Phần mềm.
+In order to get any license under these terms, you must agree
+to them as both strict obligations and conditions to all
+your licenses.
 
-2. QUYỀN ĐƯỢC CẤP
-   Bên cấp phép cấp cho Bạn quyền cá nhân, không độc quyền, không được chuyển
-   nhượng và có thể bị thu hồi để tải về, cài đặt và chạy Phần mềm cho mục đích
-   sử dụng riêng, phi thương mại của chính Bạn. Mọi quyền không được nêu rõ tại
-   mục này đều thuộc về Bên cấp phép.
+## Copyright License
 
-3. HẠN CHẾ — Bạn KHÔNG được:
-   a) Phân phối lại, đăng lại hoặc tải lên lại Phần mềm (toàn bộ hay một phần),
-      kể cả tạo bản mirror hoặc đóng gói lại thành file zip / gói cài đặt khác;
-   b) Bán, cấp phép lại, cho thuê hoặc cho mượn Phần mềm;
-   c) Sử dụng Phần mềm vào bất kỳ mục đích thương mại nào khi chưa có văn bản
-      cho phép của Bên cấp phép — bao gồm dùng Phần mềm để cung cấp dịch vụ dựng /
-      edit video có thu phí, hoặc đưa Phần mềm vào khoá học, sản phẩm hay gói
-      dịch vụ trả phí;
-   d) Gỡ bỏ hoặc thay đổi thông báo bản quyền và giấy phép này;
-   e) Công bố hoặc phân phối bản đã chỉnh sửa (bản phái sinh) của Phần mềm.
+The licensor grants you a copyright license for the software
+to do everything you might do with the software that would
+otherwise infringe the licensor's copyright in it for any
+permitted purpose, other than distributing the software or
+making changes or new works based on the software.
 
-4. VỀ NỀN TẢNG GITHUB
-   Kho mã được đặt công khai trên GitHub. Điều khoản dịch vụ của GitHub cho phép
-   người dùng GitHub xem và fork (sao chép trong phạm vi GitHub) các kho mã công
-   khai. Điều đó không cấp thêm bất kỳ quyền nào khác ngoài các quyền tại Mục 2;
-   mọi hạn chế tại Mục 3 vẫn áp dụng, kể cả với bản fork.
+## Patent License
 
-5. THÀNH PHẦN BÊN THỨ BA
-   FFmpeg, faster-whisper, rembg, OpenCV, Pillow, NumPy và các thư viện / model
-   khác mà Phần mềm gọi tới thuộc giấy phép riêng của chúng (xem
-   THIRD_PARTY_NOTICES.md). Giấy phép này không áp dụng cho các thành phần đó.
+The licensor grants you a patent license for the software that
+covers patent claims the licensor can license, or becomes able
+to license, that you would infringe by using the software.
 
-6. KHÔNG BẢO ĐẢM
-   Phần mềm được cung cấp "NGUYÊN TRẠNG", không kèm bất kỳ bảo đảm nào, dù rõ ràng
-   hay ngụ ý, bao gồm bảo đảm về khả năng thương mại, sự phù hợp cho một mục đích
-   cụ thể và không vi phạm. Bên cấp phép không chịu trách nhiệm về bất kỳ khiếu
-   nại, thiệt hại hay trách nhiệm pháp lý nào phát sinh từ việc sử dụng Phần mềm.
+## Noncommercial Purposes
 
-7. CHẤM DỨT
-   Quyền của Bạn theo giấy phép này tự động chấm dứt khi Bạn vi phạm bất kỳ điều
-   khoản nào. Khi chấm dứt, Bạn phải ngừng sử dụng và xoá mọi bản sao Phần mềm.
+Any noncommercial purpose is a permitted purpose.
 
-8. CẤP PHÉP THƯƠNG MẠI
-   Để sử dụng thương mại, phân phối hoặc tích hợp Phần mềm vào sản phẩm / dịch vụ,
-   hãy liên hệ Agent Space (AGS).
+## Personal Uses
 
-Nếu bản tiếng Việt và bản tiếng Anh có khác biệt, bản tiếng Việt được ưu tiên.
+Personal use for research, experiment, and testing for
+the benefit of public knowledge, personal study, private
+entertainment, hobby projects, amateur pursuits, or religious
+observance, without any anticipated commercial application,
+is use for a permitted purpose.
 
-================================================================================
-ENGLISH VERSION
-================================================================================
+## Noncommercial Organizations
 
-1. DEFINITIONS
-   "Licensor" means Agent Space (AGS). "Software" means all content listed above.
-   "You" means the individual who downloads or uses the Software.
+Use by any charitable organization, educational institution,
+public research organization, public safety or health
+organization, environmental protection organization,
+or government institution is use for a permitted purpose
+regardless of the source of funding or obligations resulting
+from the funding.
 
-2. LICENSE GRANT
-   The Licensor grants You a personal, non-exclusive, non-transferable, revocable
-   right to download, install and run the Software solely for Your own
-   non-commercial use. All rights not expressly granted in this section are
-   reserved by the Licensor.
+## Fair Use
 
-3. RESTRICTIONS — You may NOT:
-   a) Redistribute, re-publish or re-upload the Software (in whole or in part),
-      including creating mirrors or re-packaged zip files / installers;
-   b) Sell, sublicense, rent or lend the Software;
-   c) Use the Software for any commercial purpose without the Licensor's prior
-      written permission — including using it to deliver paid video editing
-      services, or bundling it in paid courses, products or service packages;
-   d) Remove or alter any copyright notice or this license;
-   e) Publish or distribute modified versions (derivative works) of the Software.
+You may have "fair use" rights for the software under the
+law. These terms do not limit them.
 
-4. GITHUB
-   The repository is public on GitHub. GitHub's Terms of Service allow GitHub
-   users to view and fork public repositories within GitHub. That does not grant
-   any rights beyond those in Section 2; all restrictions in Section 3 continue to
-   apply, including to forks.
+## No Other Rights
 
-5. THIRD-PARTY COMPONENTS
-   FFmpeg, faster-whisper, rembg, OpenCV, Pillow, NumPy and other libraries /
-   models the Software invokes remain under their own licenses (see
-   THIRD_PARTY_NOTICES.md). This license does not apply to them.
+These terms do not allow you to sublicense or transfer any of
+your licenses to anyone else, or prevent the licensor from
+granting licenses to anyone else.  These terms do not imply
+any other licenses.
 
-6. NO WARRANTY
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
-   LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
-   USE OF THE SOFTWARE.
+## Patent Defense
 
-7. TERMINATION
-   Your rights under this license terminate automatically if You breach any of
-   its terms. Upon termination You must stop using and delete all copies of the
-   Software.
+If you make any written claim that the software infringes or
+contributes to infringement of any patent, your patent license
+for the software granted under these terms ends immediately. If
+your company makes such a claim, your patent license ends
+immediately for work on behalf of your company.
 
-8. COMMERCIAL LICENSING
-   For commercial use, redistribution or integration into products / services,
-   contact Agent Space (AGS).
+## Violations
 
-If the Vietnamese and English versions differ, the Vietnamese version prevails.
+The first time you are notified in writing that you have
+violated any of these terms, or done anything with the software
+not covered by your licenses, your licenses can nonetheless
+continue if you come into full compliance with these terms,
+and take practical steps to correct past violations, within
+32 days of receiving notice.  Otherwise, all your licenses
+end immediately.
+
+## No Liability
+
+***As far as the law allows, the software comes as is, without
+any warranty or condition, and the licensor will not be liable
+to you for any damages arising out of these terms or the use
+or nature of the software, under any kind of legal claim.***
+
+## Definitions
+
+The **licensor** is the individual or entity offering these
+terms, and the **software** is the software the licensor makes
+available under these terms.
+
+**You** refers to the individual or entity agreeing to these
+terms.
+
+**Your company** is any legal entity, sole proprietorship,
+or other kind of organization that you work for, plus all
+organizations that have control over, are under the control of,
+or are under common control with that organization.  **Control**
+means ownership of substantially all the assets of an entity,
+or the power to direct its management and policies by vote,
+contract, or otherwise.  Control can be direct or indirect.
+
+**Your licenses** are all the licenses granted to you for the
+software under these terms.
+
+**Use** means anything you do with the software requiring one
+of your licenses.

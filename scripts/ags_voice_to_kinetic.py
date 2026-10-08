@@ -2,7 +2,8 @@
 """
 AGS (Agent Space) Video Editing: Giọng nói -> hoạt hình chữ 2D (Kinetic Typography)
 Bóc băng Whisper theo từng từ, chia cụm ngắn (<= 3 giây), mỗi cụm hiện trên card trắng với hiệu ứng
-bật nảy (pop-in) và giữ đúng mốc thời gian của audio. Xuất MP4 1080x1920, âm lượng -14 LUFS.
+bật nảy (pop-in) và giữ đúng mốc thời gian của audio. Card nằm gọn trong vùng an toàn 9:16 (ags_common.safe_box).
+Xuất MP4 1080x1920, âm lượng -14 LUFS.
 """
 
 import argparse
@@ -11,22 +12,27 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from ags_common import encode_frames, fit_text, group_words, media_duration, timeline_frames, transcribe_words
+from ags_common import (encode_frames, fit_text, group_words, media_duration, safe_box, timeline_frames,
+                        transcribe_words)
 
 WIDTH, HEIGHT, FPS = 1080, 1920, 30
 BG_COLOR = "#FBF8F1"
 TEXT_COLOR = "#222222"
-CARD_MARGIN_X = 100
 POP_FRAMES = 8  # ~0.27s bật nảy ở đầu mỗi cụm chữ
+POP_MAX = 1.05  # easeOutBack vượt tối đa ~4%: card nhỏ hơn vùng an toàn chừng ấy để không tràn khi nảy
+SAFE = safe_box(WIDTH, HEIGHT)
+CARD_W = int((SAFE[2] - SAFE[0]) / POP_MAX)
+CARD_MAX_H = int((SAFE[3] - SAFE[1]) / POP_MAX)
+CARD_CENTER = ((SAFE[0] + SAFE[2]) // 2, (SAFE[1] + SAFE[3]) // 2)
 
 
-def create_kinetic_card(text, width=WIDTH):
+def create_kinetic_card(text):
     """Card trắng bo góc chứa text (RGBA, đúng kích thước card)."""
-    card_w = width - 2 * CARD_MARGIN_X
+    card_w = CARD_W
     probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
-    font, lines = fit_text(probe, text, "bold", max_width=card_w - 120, max_lines=4, size=76, min_size=48)
+    font, lines = fit_text(probe, text, "bold", max_width=card_w - 100, max_lines=4, size=76, min_size=44)
     line_h = int(font.size * 1.3)
-    card_h = max(360, len(lines) * line_h + 160)
+    card_h = min(CARD_MAX_H, max(300, len(lines) * line_h + 140))
     card = Image.new("RGBA", (card_w, card_h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(card)
     draw.rounded_rectangle([0, 0, card_w - 1, card_h - 1], radius=40, fill="#FFFFFF", outline="#E5E0D8", width=4)
@@ -49,7 +55,7 @@ def compose(background, card, scale):
     frame = background.copy()
     if scale != 1.0:
         card = card.resize((max(1, int(card.width * scale)), max(1, int(card.height * scale))), Image.LANCZOS)
-    frame.paste(card, ((WIDTH - card.width) // 2, (HEIGHT - card.height) // 2), card)
+    frame.paste(card, (CARD_CENTER[0] - card.width // 2, CARD_CENTER[1] - card.height // 2), card)
     return frame.tobytes()
 
 

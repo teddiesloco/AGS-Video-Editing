@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ags": {
+      "type": "stdio",
+      "command": "${CLAUDE_PROJECT_DIR:-.}/venv/bin/python",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/mcp/ags_mcp_server.py"]
+    }
+  }
+}

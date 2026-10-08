@@ -18,7 +18,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from ags_common import run_cmd
+from ags_common import nfc, run_cmd
 
 TEMPLATE = json.loads(Path(__file__).with_name("ags_capcut_template.json").read_text(encoding="utf-8"))
 PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
@@ -190,7 +190,8 @@ class AgsCapCutDraft:
 
     def add_text(self, text: str, start_at: float, duration: float, color: str = "#F7B503",
                  size: float = 12.0, y: float = 0.55) -> str:
-        """Chữ tiêu đề; y trong [-1, 1] (0 = giữa khung, dương = phía trên)."""
+        """Chữ tiêu đề (chuẩn hoá NFC); y trong [-1, 1] (0 = giữa khung, dương = phía trên)."""
+        text = nfc(text)
         font = _capcut_default_font()
         content = {
             "styles": [{
