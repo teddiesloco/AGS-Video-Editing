@@ -2,6 +2,8 @@
 
 Bộ 5 công cụ tự động hóa video độc quyền thuộc hệ sinh thái AgentSea, giúp tiết kiệm 90% thời gian biên tập video hàng ngày.
 
+
+> 📘 **HƯỚNG DẪN ĐA NỀN TẢNG:** Xem chi tiết file [**HUONG-DAN-SU-DUNG.md**](HUONG-DAN-SU-DUNG.md) để biết cách dùng trên **Claude Code, Codex, Google Antigravity, Cursor** hoặc trực tiếp trên website **chatgpt.com** và **claude.ai**.
 ---
 
 ## 🚀 Tính Năng Chính
