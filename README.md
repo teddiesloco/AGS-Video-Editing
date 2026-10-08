@@ -13,6 +13,18 @@ Bộ 5 công cụ tự động hóa video độc quyền thuộc hệ sinh thái
 
 ---
 
+## 🛡️ Đồ Nghề Chống AI Slop & Tương Thích Đa Nền Tảng AI
+- **Google Antigravity & Gemini:** Tích hợp bộ quy tắc tại `adapters/antigravity_gemini.md` giúp Gemini chạy thẳng lệnh kỹ thuật, cấm nói nhảm, cấm sinh bash lỗi.
+- **Claude Desktop & Code:** Adapter chuẩn slash command tại `adapters/claude_rules.md`.
+- **ChatGPT Custom GPT:** System prompt chuẩn hoá tại `adapters/chatgpt_custom_instructions.md`.
+- **Harness Kiểm Định Chất Lượng Tự Động:**
+  ```bash
+  python harness/anti_slop_guard.py "video_output.mp4"
+  ```
+  Tự động quét: Lệch âm thanh A/V Sync, phụ đề rác, lặp từ ảo giác, đen màn hình và kiểm tra chuẩn âm lượng phát thanh `-14 LUFS`.
+
+---
+
 ## 💻 Cài Đặt
 
 ### 🍎 Dành cho macOS:

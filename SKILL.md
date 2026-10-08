@@ -27,6 +27,15 @@ Bộ công cụ tự động hóa hậu kỳ video hoàn chỉnh cho nhà sáng 
 5. **/ags-voice-doodle** `<audio.mp3>`:
    - Biến file ghi âm thành video hoạt hình người que nét chì trên nền giấy kraft nâu.
 
+
+---
+
+## 🛡️ Anti-AI-Slop Quality Gate:
+Chạy kiểm định chất lượng bắt buộc sau mỗi lần render video:
+```bash
+python harness/anti_slop_guard.py <duong_dan_video>
+```
+Tự động bắt lỗi: Lệch âm hình (A/V sync), phụ đề ảo giác/lặp từ, âm lượng không đạt chuẩn broadcast -14 LUFS.
 ---
 
 ## Cài đặt nhanh (1-Click):
