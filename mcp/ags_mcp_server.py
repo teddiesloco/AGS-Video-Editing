@@ -12,7 +12,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from mcp.server.fastmcp import FastMCP
 
@@ -20,11 +20,15 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 HARNESS = ROOT / "harness"
 TAIL = 2000
+sys.path.insert(0, str(SCRIPTS))
+
+from ags_client_license import assert_client_licensed  # noqa: E402
 
 mcp = FastMCP("ags-video-editing")
 
 
 def _run(args: List[object], output: str) -> dict:
+    assert_client_licensed()
     proc = subprocess.run([sys.executable, *[str(a) for a in args]], cwd=str(ROOT), capture_output=True,
                           text=True, encoding="utf-8", errors="replace")
     return {"output": output, "exit_code": proc.returncode,
@@ -60,13 +64,21 @@ def text_behind_person(input_path: str, text: str, output_path: str = "", durati
 
 
 @mcp.tool()
-def editorial_sub(input_path: str, output_path: str = "", model: str = "base", style: str = "editorial",
-                  highlight_color: str = "#FFD60A", keywords: str = "") -> dict:
-    """Đốt phụ đề và chuẩn hoá -14 LUFS. style: 'editorial' (Serif tạp chí) hoặc 'karaoke' (từ đang nói đổi màu).
-    keywords: từ/cụm từ khoá cách nhau bằng dấu phẩy, tô highlight_color (#RRGGBB)."""
+def editorial_sub(input_path: str, output_path: str = "", model: str = "base", style: str = "clean",
+                  highlight_color: str = "", keywords: str = "", script_path: str = "") -> dict:
+    """Đốt phụ đề và chuẩn hoá -14 LUFS. style: 'clean' (Sans đậm trắng, bóng mềm, từ khoá vàng cát; mặc định),
+    'editorial' (Serif tạp chí) hoặc 'karaoke' (từ đang nói đổi màu).
+    keywords: từ/cụm từ khoá cách nhau bằng dấu phẩy, tô highlight_color (#RRGGBB; để trống = màu mặc định của kiểu).
+    script_path: file UTF-8 chứa đúng
+    lời đọc — chữ hiện theo script (không theo Whisper nghe sai), Whisper chỉ cho mốc thời gian. Chữ tối đa 2 dòng, đúng cỡ."""
     out = output_path or _default_out(input_path, style)
-    return _run([SCRIPTS / "ags_editorial_sub.py", input_path, "--out", out, "--model", model, "--style", style,
-                 "--highlight-color", highlight_color, "--keywords", keywords], out)
+    args = [SCRIPTS / "ags_editorial_sub.py", input_path, "--out", out, "--model", model, "--style", style,
+            "--keywords", keywords]
+    if highlight_color:
+        args += ["--highlight-color", highlight_color]
+    if script_path:
+        args += ["--script", script_path]
+    return _run(args, out)
 
 
 @mcp.tool()
@@ -100,18 +112,19 @@ def clip_shorts_transcript(input_path: str, output_path: str = "", model: str = 
 
 @mcp.tool()
 def clip_shorts_cut(input_path: str, transcript_path: str, ranges: List[Dict[str, object]], output_dir: str = "",
-                    style: str = "karaoke", highlight_color: str = "#FFD60A", keywords: str = "",
+                    style: str = "karaoke", highlight_color: str = "", keywords: str = "",
                     reframe: bool = True) -> dict:
     """Bước 2 làm short: ranges = [{"start": giây, "end": giây, "hook": "chữ hook (tuỳ chọn)", "name": "tên file"}].
-    Mỗi đoạn (1–180 s) thành 1 short 1080x1920: bám mặt, phụ đề (style karaoke | editorial | none), hook hiện ngay
+    Mỗi đoạn (1–180 s) thành 1 short 1080x1920: bám mặt, phụ đề (style karaoke | clean | editorial | none), hook hiện ngay
     khung 0, -14 LUFS. output trả về thư mục; stdout_tail có JSON danh sách file."""
     out_dir = output_dir or str(Path(input_path).expanduser().resolve().with_name(f"{Path(input_path).stem}_shorts"))
     with tempfile.TemporaryDirectory(prefix="ags_mcp_") as tmp:
         ranges_file = Path(tmp) / "ranges.json"
         ranges_file.write_text(json.dumps(ranges, ensure_ascii=False), encoding="utf-8")
         args = [SCRIPTS / "ags_clip_shorts.py", "cut", input_path, "--transcript", transcript_path,
-                "--ranges", ranges_file, "--out-dir", out_dir, "--style", style,
-                "--highlight-color", highlight_color, "--keywords", keywords]
+                "--ranges", ranges_file, "--out-dir", out_dir, "--style", style, "--keywords", keywords]
+        if highlight_color:
+            args += ["--highlight-color", highlight_color]
         return _run(args + ([] if reframe else ["--no-reframe"]), out_dir)
 
 
@@ -142,13 +155,22 @@ def bds_draft(name: str, clips: List[str], output_dir: str = "", capcut: bool = 
 
 
 @mcp.tool()
-def bds_render(images: List[str], output_path: str, seconds: float = 2.0, bpm: float = 0.0, beat_step: int = 4,
-               auto_beat: bool = False, music: str = "", voice: str = "", transition: str = "cut",
-               transition_seconds: float = 0.5) -> dict:
-    """Render slideshow MP4 9:16 (Ken Burns) từ ảnh BĐS. auto_beat=True: dò BPM/beat từ music và cắt đúng beat.
-    voice: giọng đọc (có cả music thì nhạc tự nhỏ khi có giọng). transition: 'cut' hoặc 'wipe' (quét trái → phải)."""
-    args = [SCRIPTS / "ags_bds_cli.py", "render", "--images", *images, "--out", output_path, "--seconds", seconds,
-            "--beat-step", beat_step, "--transition", transition, "--transition-seconds", transition_seconds]
+def bds_render(output_path: str, clips: Optional[List[str]] = None, images: Optional[List[str]] = None,
+               seconds: float = 2.0, bpm: float = 0.0, beat_step: int = 4, auto_beat: bool = False,
+               music: str = "", voice: str = "", transition: str = "cut", transition_seconds: float = 0.5,
+               zoom: str = "auto", grade: str = "none") -> dict:
+    """Render MP4 9:16 từ video thật và/hoặc ảnh (đưa đúng một trong `clips` / `images`, nhận cả hai loại file; video giữ
+    chuyển động thật, lấy `seconds` giây đầu mỗi file, bỏ tiếng gốc, file ngắn hơn thì báo lỗi). auto_beat=True: dò
+    BPM/beat từ music và cắt đúng beat. voice: giọng đọc (có cả music thì nhạc tự nhỏ khi có giọng; giọng dài hơn hình →
+    báo lỗi, không cắt giọng). transition: 'cut', 'wipe' (quét trái → phải) hoặc 'dissolve' (hoà mờ). zoom: 'auto'
+    (ảnh Ken Burns, video giữ nguyên), 'none', 'subtle' (đẩy vào nhẹ 1.06x). grade: 'none', 'natural' hoặc 'warm' (chỉnh
+    màu nhẹ, cùng công thức cho mọi clip). stdout cuối là JSON có `cut_times` để đặt SFX."""
+    if bool(clips) == bool(images):
+        return {"output": "", "exit_code": 2, "stdout_tail": "",
+                "stderr_tail": "Truyền đúng một trong `clips` hoặc `images` (danh sách không rỗng)"}
+    args = [SCRIPTS / "ags_bds_cli.py", "render", "--clips", *(clips or images), "--out", output_path,
+            "--seconds", seconds, "--beat-step", beat_step, "--transition", transition,
+            "--transition-seconds", transition_seconds, "--zoom", zoom, "--grade", grade]
     if bpm:
         args += ["--bpm", bpm]
     if auto_beat:
@@ -168,6 +190,45 @@ def anti_slop_guard(video_path: str, contact_sheet: str = "", frames: int = 12) 
     if contact_sheet:
         args += ["--contact-sheet", contact_sheet]
     return _run(args, contact_sheet or video_path)
+
+
+@mcp.tool()
+def tts_voices(engine: str) -> dict:
+    """List bundled voices for vieneu, gemini, synth, or zerotts. First use downloads local model weights."""
+    return _run([SCRIPTS / "ags_tts.py", "voices", "--engine", engine], "")
+
+
+@mcp.tool()
+def tts_synthesize(engine: str, text_path: str, output_path: str, voice: str = "") -> dict:
+    """UTF-8 Vietnamese text (auto-normalizes 99k, 1,9tr, 40%, 24/7) to a new WAV. ZeroTTS voices: evaluation/demo only."""
+    assert_client_licensed()
+    args = [SCRIPTS / "ags_tts.py", "synthesize", "--engine", engine,
+            "--text-file", text_path, "--out", output_path]
+    if voice:
+        args += ["--voice", voice]
+    return _run(args, output_path)
+
+
+@mcp.tool()
+def sfx_list() -> dict:
+    """List bundled Kenney CC0 sound effects."""
+    return _run([SCRIPTS / "ags_sfx.py", "list"], "")
+
+
+@mcp.tool()
+def sfx_mix(input_path: str, events: List[dict], output_path: str) -> dict:
+    """Mix effects [{file, time, gain}] into video. file: bundled filename (see sfx_list) or absolute path; gain 0–1."""
+    for event in events:
+        name = event.get("file") if isinstance(event, dict) else None
+        # A relative path would resolve against the server's repo cwd, not the caller's: refuse the ambiguity.
+        if isinstance(name, str) and not Path(name).expanduser().is_absolute() and Path(name).name != name:
+            return {"output": "", "exit_code": 2, "stdout_tail": "",
+                    "stderr_tail": f"Custom effect must be an absolute path or a bundled filename: {name}"}
+    with tempfile.TemporaryDirectory(prefix="ags_sfx_") as tmp:
+        manifest = Path(tmp) / "events.json"
+        manifest.write_text(json.dumps(events, ensure_ascii=False), encoding="utf-8")
+        return _run([SCRIPTS / "ags_sfx.py", "mix", input_path, "--events", manifest,
+                     "--out", output_path], output_path)
 
 
 if __name__ == "__main__":

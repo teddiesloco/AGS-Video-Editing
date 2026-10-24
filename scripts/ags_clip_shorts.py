@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 
 from ags_common import LOUDNORM, group_word_lists, run_cmd, transcribe_words, video_info
-from ags_editorial_sub import DEFAULT_HIGHLIGHT, STYLES, ass_color, parse_keywords, subtitles_filter, write_ass
+from ags_editorial_sub import STYLES, ass_color, parse_keywords, subtitles_filter, write_ass
 from ags_reframe import OUT_H, OUT_W, reframe_filter
 
 PRE_PAD, POST_PAD = 0.10, 0.20
@@ -136,7 +136,8 @@ def main(argv=None):
     p.add_argument("--range", action="append", help="Đoạn START-END (giây hoặc phút:giây), lặp lại được")
     p.add_argument("--out-dir", default=None, help="Thư mục xuất (mặc định <tên>_shorts cạnh video)")
     p.add_argument("--style", choices=[*STYLES, "none"], default="karaoke", help="Kiểu phụ đề (mặc định karaoke)")
-    p.add_argument("--highlight-color", default=DEFAULT_HIGHLIGHT, help="Màu #RRGGBB cho từ đang nói / từ khoá / hook")
+    p.add_argument("--highlight-color", default=None,
+                   help="Màu #RRGGBB cho từ đang nói / từ khoá / hook (mặc định theo kiểu: clean vàng cát, karaoke #FFD60A)")
     p.add_argument("--keywords", default="", help="Từ/cụm từ khoá cần tô màu, cách nhau bằng dấu phẩy")
     p.add_argument("--hook-seconds", type=float, default=3.0, help="Thời gian hiện hook ở đầu short (giây)")
     p.add_argument("--no-reframe", action="store_true", help="Không bám mặt: thu nhỏ vừa khung dọc, thêm viền")

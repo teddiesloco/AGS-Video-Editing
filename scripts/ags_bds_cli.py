@@ -2,7 +2,7 @@
 """
 AGS (Agent Space) Video Editing: CLI dựng video Bất Động Sản
   draft        Sinh draft CapCut (thử nghiệm) từ clip/ảnh + chữ tiêu đề + nhạc.
-  render       Render slideshow MP4 9:16 trực tiếp bằng FFmpeg (Ken Burns, cắt theo beat, wipe, duck nhạc dưới giọng đọc).
+  render       Render MP4 9:16 trực tiếp bằng FFmpeg từ video thật và/hoặc ảnh (zoom nhẹ, cut/wipe/dissolve, cắt theo beat, duck nhạc dưới giọng đọc).
   parcel       Ảnh viền ranh giới thửa đất phát sáng.
   subdivision  Ảnh lưới phân lô đổi màu theo trạng thái.
   ticker       Ảnh khung bản tin BĐS có thanh chữ.
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from bds import (AgsCapCutDraft, AgsCinematicStyle, AgsDirectRenderer, AgsLandParcelStyle, beat_durations,
                  capcut_drafts_dir, detect_beats)
-from bds.ags_direct_renderer import TRANSITIONS
+from bds.ags_direct_renderer import GRADES, TRANSITIONS, ZOOMS, is_image
 from bds.ags_style_cinematic import HOOK_PROMPTS
 
 
@@ -58,12 +58,15 @@ def cmd_draft(args):
 
 
 def cmd_render(args):
-    durations, bpm = clip_durations(args, len(args.images))
+    durations, bpm = clip_durations(args, len(args.media))
     renderer = AgsDirectRenderer(args.width, args.height, args.fps)
-    out = renderer.render_image_slideshow(args.images, durations, args.out, args.music, args.voice,
-                                          args.transition, args.transition_seconds)
-    print(json.dumps({"output": out, "slides": len(args.images), "bpm": bpm,
-                      "seconds_per_slide": [round(d, 3) for d in durations]}, ensure_ascii=False))
+    out = renderer.render_slideshow(args.media, durations, args.out, args.music, args.voice,
+                                    args.transition, args.transition_seconds, args.zoom, args.grade)
+    # cut_times: mốc giây của từng điểm chuyển cảnh — dùng để đặt SFX (ags_sfx.py mix) đúng chỗ chuyển
+    cuts = [round(sum(durations[:i]), 3) for i in range(1, len(durations))]
+    print(json.dumps({"output": out, "slides": len(args.media), "videos": sum(not is_image(m) for m in args.media),
+                      "bpm": bpm, "seconds_per_slide": [round(d, 3) for d in durations],
+                      "total_seconds": round(sum(durations), 3), "cut_times": cuts}, ensure_ascii=False))
 
 
 def cmd_parcel(args):
@@ -126,14 +129,23 @@ def main(argv=None):
     p.add_argument("--fps", type=int, default=30)
     p.set_defaults(func=cmd_draft)
 
-    p = sub.add_parser("render", help="Render slideshow MP4 9:16 bằng FFmpeg")
-    p.add_argument("--images", nargs="+", required=True)
+    p = sub.add_parser("render", help="Render MP4 9:16 bằng FFmpeg từ video thật và/hoặc ảnh")
+    media = p.add_mutually_exclusive_group(required=True)
+    media.add_argument("--clips", nargs="+", dest="media", metavar="FILE",
+                       help="Video và/hoặc ảnh theo thứ tự (video giữ chuyển động thật, lấy từ giây 0, bỏ tiếng gốc)")
+    media.add_argument("--images", nargs="+", dest="media", metavar="FILE", help="Như --clips (tên cũ, nhận cả video)")
     timing_opts(p, 2.0)
     p.add_argument("--music", default=None, help="Nhạc nền")
-    p.add_argument("--voice", default=None, help="Giọng đọc; có cả --music thì nhạc tự nhỏ xuống khi có giọng")
+    p.add_argument("--voice", default=None,
+                   help="Giọng đọc; có cả --music thì nhạc tự nhỏ xuống khi có giọng. Dài hơn hình → báo lỗi, không cắt giọng")
     p.add_argument("--transition", choices=list(TRANSITIONS), default="cut",
-                   help="cut = cắt cứng; wipe = quét trái → phải (ảnh trước/sau)")
-    p.add_argument("--transition-seconds", type=float, default=0.5, help="Thời gian wipe (giây)")
+                   help="cut = cắt cứng; wipe = quét trái → phải; dissolve = hoà mờ")
+    p.add_argument("--transition-seconds", type=float, default=0.5, help="Thời gian wipe/dissolve (giây)")
+    p.add_argument("--zoom", choices=list(ZOOMS), default="auto",
+                   help="auto = ảnh Ken Burns, video giữ nguyên; none = không zoom; subtle = đẩy vào nhẹ 1.06x cả ảnh và video")
+    p.add_argument("--grade", choices=list(GRADES), default="none",
+                   help="Chỉnh màu nhẹ, cùng công thức cho mọi clip: none = giữ nguyên; natural = tương phản/bão hoà +5%%; "
+                        "warm = natural + ấm nhẹ")
     p.add_argument("--out", required=True, help="File MP4 đầu ra")
     frame_opts(p)
     p.add_argument("--fps", type=int, default=30)

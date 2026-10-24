@@ -7,8 +7,9 @@ license: "PolyForm Strict 1.0.0 — xem LICENSE"
 
 # /ags-voice-doodle — Người Que Nét Chì Trên Giấy Kraft
 
-> Lệnh chạy từ thư mục gốc repo AGS Video Editing (hai cấp trên file này) — hoặc từ thư mục của skill nếu dùng bản zip
-> (đã kèm `scripts/`, `harness/`) — bằng Python có đủ thư viện (venv của repo: macOS `./venv/bin/python`, Windows `venv\Scripts\python`).
+> Lệnh chạy từ thư mục gốc skill AGS Video Editing (hai cấp trên file này) bằng Python của venv trong skill
+> (macOS/Linux `venv/bin/python`, Windows `venv\Scripts\python.exe`; đường dẫn có dấu cách thì đặt trong ngoặc kép).
+> Chưa có venv → làm theo `SKILL.md` ở gốc (`scripts/ags_setup.py --check`, rồi installer).
 
 ```bash
 python scripts/ags_voice_to_doodle.py <audio.mp3|wav|m4a> [--out <video_xuat.mp4>] [--model base]

@@ -38,5 +38,6 @@ dụng cho mọi bản fork.
 FFmpeg, faster-whisper, rembg, OpenCV, Pillow, NumPy, model Whisper / U²-Net / YuNet… thuộc giấy phép riêng của chúng —
 xem [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-## Cấp phép thương mại
-Muốn dùng thương mại, phân phối hoặc tích hợp phần mềm vào sản phẩm/dịch vụ: liên hệ Agent Space (AGS).
+## Cấp phép thương mại (Commercial Seat License)
+- **Bản công khai / miễn phí:** chịu điều khoản phi thương mại của PolyForm Strict 1.0.0 ở trên.
+- **Khách hàng mua gói thương mại chính thức từ AGS (Agent Space):** được cấp quyền sử dụng bộ công cụ trên máy của người mua để sản xuất video phục vụ hoạt động kinh doanh, quảng cáo, bán hàng và làm dịch vụ video cho khách hàng (toàn bộ video MP4/audio đầu ra thuộc quyền sở hữu thương mại của người mua). Người mua **vẫn không được** bán lại, chia sẻ, đăng công khai hoặc phân phối lại bộ mã nguồn / file zip của bộ skill cho bên thứ ba.

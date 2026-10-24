@@ -7,8 +7,9 @@ license: "PolyForm Strict 1.0.0 — xem LICENSE"
 
 # /ags-clip-shorts — Video Dài → Nhiều Short 9:16
 
-> Lệnh chạy từ thư mục gốc repo AGS Video Editing (hai cấp trên file này) — hoặc từ thư mục của skill nếu dùng bản zip
-> (đã kèm `scripts/`, `harness/`) — bằng Python có đủ thư viện (venv của repo: macOS `./venv/bin/python`, Windows `venv\Scripts\python`).
+> Lệnh chạy từ thư mục gốc skill AGS Video Editing (hai cấp trên file này) bằng Python của venv trong skill
+> (macOS/Linux `venv/bin/python`, Windows `venv\Scripts\python.exe`; đường dẫn có dấu cách thì đặt trong ngoặc kép).
+> Chưa có venv → làm theo `SKILL.md` ở gốc (`scripts/ags_setup.py --check`, rồi installer).
 
 ## Bước 1 — Bóc băng
 ```bash
@@ -31,7 +32,7 @@ Ghi `ranges.json` (mốc lấy từ `start` câu đầu và `end` câu cuối; n
 ## Bước 3 — Xuất short
 ```bash
 python scripts/ags_clip_shorts.py cut <video_dai.mp4> --transcript transcript.json --ranges ranges.json \
-  [--style karaoke|editorial|none] [--keywords "sổ hồng, pháp lý"] [--highlight-color "#FFD60A"] \
+  [--style karaoke|clean|editorial|none] [--keywords "sổ hồng, pháp lý"] [--highlight-color "#FFD60A"] \
   [--hook-seconds 3] [--no-reframe] [--out-dir shorts/]
 # hoặc nhanh: --range 75.2-118.9 --range 4:02-4:41
 ```

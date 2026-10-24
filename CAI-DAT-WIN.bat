@@ -1,53 +1,61 @@
 @echo off
+setlocal EnableExtensions
 chcp 65001 >nul
-echo ==================================================
-echo 🎬 Cai dat AGS Video Editing (AGS - Agent Space) cho Windows
-echo ==================================================
+rem AGS Video Editing - cai moi truong cho Windows (chua duoc chay thu tren Windows that).
+rem   CAI-DAT-WIN.bat           cai day du: loi + MCP + ca hai giong doc cuc bo (VieNeu, ZeroTTS) + SFX
+rem   CAI-DAT-WIN.bat --core    khong cai thu vien TTS
+rem   CAI-DAT-WIN.bat --yes     duoc phep tu cai Python 3.11 / FFmpeg con thieu bang winget
+rem Moi tuy chon khac chuyen thang cho scripts\ags_setup.py (--check, --warmup-tts, --print-mcp, ...).
+rem Chay duoc tu moi thu muc, ke ca duong dan co dau cach. Dat AGS_PYTHON de chi dinh Python 3.11/3.12.
+set "ROOT=%~dp0"
+set "ASSUME_YES=0"
+for %%A in (%*) do (
+    if /I "%%~A"=="--yes" set "ASSUME_YES=1"
+    if /I "%%~A"=="-y" set "ASSUME_YES=1"
+)
+set "AGS_LINKS=%LOCALAPPDATA%\Microsoft\WinGet\Links"
+if exist "%AGS_LINKS%" set "PATH=%PATH%;%AGS_LINKS%"
 
-:: 1. Kiem tra Python
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo [!] Chua cai Python. Vui long cai Python 3.10+ tu python.org va tich vao 'Add Python to PATH'
-    pause
-    exit /b 1
+call :find_python
+if not defined PY_EXE if "%ASSUME_YES%"=="1" call :install_python
+if not defined PY_EXE (
+    echo Chua co Python 3.11/3.12. Cai: winget install -e --id Python.Python.3.11
+    echo roi chay lai, hoac them --yes de installer tu cai, hoac dat AGS_PYTHON.
+    exit /b 3
 )
 
-:: 2. Kiem tra FFmpeg
-ffmpeg -version >nul 2>&1
-if errorlevel 1 (
-    echo [*] Dang cai dat FFmpeg qua winget...
-    winget install Gyan.FFmpeg
-    if errorlevel 1 (
-        echo [!] Khong the tu dong cai FFmpeg. Vui long tai FFmpeg tu gyan.dev/ffmpeg va them vao PATH.
-    ) else (
-        echo [*] Da cai FFmpeg. Mo cua so cmd moi de PATH cap nhat.
-    )
+where ffmpeg >nul 2>&1 && where ffprobe >nul 2>&1
+if errorlevel 1 if "%ASSUME_YES%"=="1" call :install_ffmpeg
+
+"%PY_EXE%" %PY_ARGS% "%ROOT%scripts\ags_setup.py" %*
+exit /b %errorlevel%
+
+:find_python
+set "PY_EXE="
+set "PY_ARGS="
+if defined AGS_PYTHON set "PY_EXE=%AGS_PYTHON%"
+if defined PY_EXE exit /b 0
+py -3.11 --version >nul 2>&1
+if not errorlevel 1 (
+    set "PY_EXE=py"
+    set "PY_ARGS=-3.11"
+    exit /b 0
 )
-
-:: 3. Tao virtualenv trong thu muc repo
-cd /d "%~dp0"
-if not exist "venv" (
-    echo [*] Dang tao moi truong ao venv...
-    python -m venv venv
+py -3.12 --version >nul 2>&1
+if not errorlevel 1 (
+    set "PY_EXE=py"
+    set "PY_ARGS=-3.12"
 )
+exit /b 0
 
-echo [*] Dang cai dat thu vien Python...
-venv\Scripts\python -m pip install --upgrade pip
-venv\Scripts\python -m pip install -r requirements.txt
+:install_python
+echo Cai Python 3.11 bang winget...
+winget install -e --id Python.Python.3.11 --accept-package-agreements --accept-source-agreements
+call :find_python
+exit /b 0
 
-:: 4. (Tuy chon) MCP server cho Claude Code / Claude Desktop / Codex / Antigravity / Cursor
-set "WITH_MCP="
-set /p WITH_MCP=Cai them MCP server (tuy chon)? [y/N]: 
-if /I "%WITH_MCP%"=="y" (
-    venv\Scripts\python -m pip install -r requirements-mcp.txt
-    echo [*] Da cai MCP. Cau hinh client: xem HUONG-DAN-SU-DUNG.md, Phan 3.
-) else (
-    echo [i] Bo qua MCP. Cai sau bang: venv\Scripts\python -m pip install -r requirements-mcp.txt
-)
-
-echo ==================================================
-echo 🎉 Cai dat thanh cong!
-echo Chay script: venv\Scripts\python scripts\ags_cut_silence.py ^<video^>
-echo Kiem dinh:   venv\Scripts\python harness\ags_anti_slop_guard.py ^<video^>
-echo ==================================================
-pause
+:install_ffmpeg
+echo Cai FFmpeg bang winget...
+winget install -e --id Gyan.FFmpeg --accept-package-agreements --accept-source-agreements
+if exist "%AGS_LINKS%" set "PATH=%PATH%;%AGS_LINKS%"
+exit /b 0

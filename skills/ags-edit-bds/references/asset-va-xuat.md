@@ -52,3 +52,17 @@ python scripts/ags_bds_cli.py draft --name "DuAn_Mau" --clips ... --capcut
   Windows `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\`.
 - **Đã kiểm chứng:** JSON hợp lệ; bộ trường trùng khớp một draft thật của CapCut desktop (macOS, `version` 360000);
   tham chiếu material/segment đầy đủ. **Chưa kiểm chứng:** mở draft trong giao diện CapCut — lỗi thì dùng `render`.
+
+### Bằng chứng CapCut (đã đọc README/license chính, 2026-10-08)
+Ba việc khác nhau — đừng gộp:
+1. **Sửa draft (JSON cục bộ):** `capcut-cli` — https://github.com/renezander030/capcut-cli (MIT: README, GitHub API, file LICENSE).
+   README nói công cụ đọc/ghi trực tiếp `draft_content.json`/`draft_info.json`; draft mở ra trong CapCut/JianYing để chỉnh
+   tiếp. Chính README ghi: khi populate dự án app tạo sẵn, "desktop acceptance on your app build remains unverified".
+2. **Xem trước:** `capcut render` là proxy ffmpeg độ phân giải thấp, README ghi rõ "not CapCut's final render" — không dùng
+   làm bản export cuối.
+3. **Export bằng giao diện CapCut:** `pyCapCut` — https://github.com/GuanYixuan/pyCapCut sinh draft và có module tự động hoá UI
+   để export (phụ thuộc `uiautomation` trên Windows); README nói draft vẫn cần export trên CapCut bản Windows và module batch
+   export đang di chuyển (thử nghiệm). **Không thấy file LICENSE ở gốc repo, GitHub API báo license = null** → giấy phép chưa rõ,
+   không sao chép mã.
+
+Chưa kiểm chứng: mở draft do AGS sinh trong bản CapCut hiện hành. AGS không thêm dependency hay vendor nào từ hai dự án trên.

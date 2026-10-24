@@ -242,10 +242,11 @@ def _drop_whisper_junk(words):
     return result
 
 
-def group_word_lists(words, max_chars=32, max_seconds=3.0):
-    """Gom từ [(start, end, word)] thành các cụm ngắn (mỗi cụm là list từ), ngắt ở dấu câu."""
+def group_word_lists(words, max_chars=32, max_seconds=3.0, clean=True):
+    """Gom từ [(start, end, word)] thành các cụm ngắn (mỗi cụm là list từ), ngắt ở dấu câu.
+    clean=False giữ nguyên từng từ (lời đọc đã biết trước: không được lọc/gộp từ nào)."""
     groups, current = [], []
-    for word in _drop_whisper_junk(words):
+    for word in (_drop_whisper_junk(words) if clean else words):
         if current:
             length = len(" ".join(w[2] for w in current)) + 1 + len(word[2])
             if length > max_chars or word[1] - current[0][0] > max_seconds:
@@ -258,6 +259,59 @@ def group_word_lists(words, max_chars=32, max_seconds=3.0):
     if current:
         groups.append(current)
     return groups
+
+
+def align_script_words(script, asr_words):
+    """Gắn mốc thời gian cho CHÍNH XÁC các từ của lời đọc `script` (chuỗi UTF-8) dựa trên từ Whisper `asr_words`.
+
+    Trả về [(start, end, word)] với `word` là từ trong script (NFC, giữ dấu câu), không thêm/bớt/sửa từ nào.
+    Từ trùng khớp với Whisper (so theo chữ không dấu câu, hoa/thường) lấy mốc của Whisper; đoạn không khớp (Whisper
+    nghe sai) được chia theo độ dài chữ trong khoảng giữa hai mốc khớp liền kề. Không khớp từ nào thì chia đều
+    theo độ dài chữ trên toàn đoạn Whisper nghe thấy tiếng."""
+    import difflib
+
+    merged, pending = [], ""  # dấu câu đứng riêng ("—", "...") dính vào từ trước (hoặc từ sau nếu đứng đầu)
+    for token in nfc(script).split():
+        if normalize_word(token):
+            merged.append(pending + token)
+            pending = ""
+        elif merged:
+            merged[-1] += token
+        else:
+            pending += token
+    if not merged:
+        raise ValueError("Lời đọc (script) trống")
+    spoken = [w for w in asr_words if math.isfinite(w[0]) and math.isfinite(w[1]) and w[1] >= w[0]]
+    if not spoken:
+        raise ValueError("Không nhận diện được tiếng nói trong audio để gắn mốc cho script")
+    want = [normalize_word(t) for t in merged]
+    heard = [normalize_word(w[2]) for w in spoken]
+    anchor = {}
+    for block in difflib.SequenceMatcher(None, want, heard, autojunk=False).get_matching_blocks():
+        for k in range(block.size):
+            anchor[block.a + k] = spoken[block.b + k]
+    times = [None] * len(merged)
+    prev_end = spoken[0][0]
+    i = 0
+    while i < len(merged):
+        if i in anchor:
+            times[i] = (anchor[i][0], anchor[i][1])
+            prev_end = anchor[i][1]
+            i += 1
+            continue
+        j = i
+        while j < len(merged) and j not in anchor:
+            j += 1
+        stop = anchor[j][0] if j in anchor else spoken[-1][1]
+        span = max(stop - prev_end, 0.06 * (j - i))
+        weights = [len(want[k]) + 1 for k in range(i, j)]
+        cursor = prev_end
+        for k, weight in zip(range(i, j), weights):
+            share = span * weight / sum(weights)
+            times[k] = (cursor, cursor + share)
+            cursor += share
+        i = j
+    return [(start, max(end, start), token) for (start, end), token in zip(times, merged)]
 
 
 def group_words(words, max_chars=32, max_seconds=3.0):

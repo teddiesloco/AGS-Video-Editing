@@ -1,173 +1,188 @@
 # 📖 HƯỚNG DẪN SỬ DỤNG — AGS VIDEO EDITING (AGS — Agent Space)
 
-Hướng dẫn dùng bộ 8 skill edit video của AGS (Agent Space) trên **coding agent** (Claude Code, OpenAI Codex, Google
-Antigravity, Gemini CLI, Cursor), qua **MCP server**, và trên **giao diện web** (claude.ai, chatgpt.com).
+Hướng dẫn dùng bộ 9 skill edit video của AGS (Agent Space) trên **coding agent chạy cục bộ** (Claude Code, Google Antigravity,
+OpenAI Codex, Gemini CLI, Cursor), qua **MCP server** (tuỳ chọn), và nói rõ **giao diện web** (claude.ai, chatgpt.com) làm được/không làm được gì.
+
+> **Trạng thái kiểm chứng (nói thật):** mọi thứ dưới đây đã được chạy thực tế trên **macOS Apple Silicon, Python 3.11**.
+> Installer Windows (`CAI-DAT-WIN.bat`) và chạy trên Linux **chưa được chạy thử**; việc thả skill vào từng client khác ngoài
+> những gì ghi cụ thể làm theo tài liệu của client, chưa được thử trên từng client. Nếu gặp lỗi, đưa stderr cho agent.
 
 ---
 
-## PHẦN 1: CÀI ĐẶT
+## PHẦN 1: CÀI ĐẶT (người dùng chỉ cần một bước)
 
+1. Giải nén `ags-video-editing.zip` → thư mục `ags-video-editing/` (tên thư mục phải giữ nguyên: chuẩn Agent Skills yêu cầu
+   trùng tên skill). Đường dẫn chứa dấu cách (ví dụ `~/Phim của tôi/skills/...`) vẫn chạy được.
+2. Đặt thư mục đó vào nơi skill của agent (Phần 2), mở agent và nói việc cần làm bằng tiếng Việt, ví dụ:
+   > *"Cắt khoảng lặng video ~/Desktop/quay-tho.mp4 rồi làm phụ đề karaoke."*
+3. Lần đầu, agent tự đọc `SKILL.md`, chạy `scripts/ags_setup.py --check`, xin bạn **một** câu đồng ý rồi cài môi trường. Bạn
+   không phải trả lời câu hỏi nào về Python/venv/pip.
+
+### Agent (hoặc bạn) cài bằng lệnh
 ```bash
-git clone https://github.com/teddiesloco/AGS-Video-Editing.git ags-video-editing
-cd ags-video-editing
-./CAI-DAT-MAC.sh          # macOS
-CAI-DAT-WIN.bat           # Windows (bấm đúp hoặc chạy trong cmd)
+bash "/đường/dẫn/ags-video-editing/CAI-DAT-MAC.sh" --yes       # macOS / Linux
 ```
-- Đặt tên thư mục là `ags-video-editing` (như lệnh trên): chuẩn Agent Skills yêu cầu tên skill trùng tên thư mục.
-- Cần Python 3.10+ và FFmpeg (installer macOS tự cài qua Homebrew; Windows thử cài FFmpeg qua winget).
-- Installer tạo môi trường ảo `venv/`. Python dùng cho mọi lệnh: macOS `./venv/bin/python`, Windows `venv\Scripts\python.exe`.
-- Lần đầu cần Internet: faster-whisper tải model Whisper (~150 MB với `base`), rembg tải model tách người (~170 MB),
-  reframe tải model YuNet (~230 KB, vào `~/.cache/ags-video-editing/`).
+```bat
+"C:\đường\dẫn\ags-video-editing\CAI-DAT-WIN.bat" --yes         :: Windows (chưa kiểm chứng trên Windows thật)
+```
+| Tuỳ chọn | Ý nghĩa |
+|---|---|
+| (không có) | Cài **đầy đủ**: lõi + MCP + cả hai giọng đọc cục bộ (VieNeu, ZeroTTS) + SFX |
+| `--core` | Bỏ thư viện TTS (~0,9 GB); SFX/MCP/các skill khác vẫn có. Thêm TTS sau: chạy lại không kèm `--core` |
+| `--yes` | Cho phép installer tự cài Python 3.11 / FFmpeg còn thiếu: Homebrew hoặc `uv` (macOS/Linux), `winget` (Windows) |
+| `--check` (qua `ags_setup.py`) | Chỉ kiểm tra, in JSON, không đổi gì |
+| `--warmup-tts` (qua `ags_setup.py`) | Tải trước model của cả hai engine TTS (~2,7 GB) bằng terminal |
+| `--print-mcp` / `--register-claude-code` | In cấu hình MCP theo client / đăng ký MCP ở user scope của Claude Code |
+
+Cách cài làm gì: tìm Python 3.11 (hoặc 3.12) → kiểm tra `ffmpeg`/`ffprobe` (và libass cho phụ đề) → tạo `venv/` **bên trong thư mục skill**
+→ `pip install` các file `requirements*.txt` (phiên bản đã ghim) vào venv đó → `pip check` + import thử → ghi cấu hình MCP với đường dẫn
+tuyệt đối. Không dùng pip toàn cục, không ghi ra ngoài thư mục skill (trừ cache pip và cache model).
+- Python dùng cho mọi lệnh: macOS/Linux `venv/bin/python`, Windows `venv\Scripts\python.exe` — agent luôn gọi đường dẫn tuyệt đối.
+- Thiếu điều kiện tiên quyết → exit `3` kèm lệnh cài cụ thể; Windows vừa cài FFmpeg bằng winget cần mở terminal mới.
+- Dời/đổi tên thư mục skill: venv và cấu hình MCP chứa đường dẫn tuyệt đối — chạy lại installer.
+
+### Model tải ở lần dùng đầu (cần Internet, không kèm trong gói)
+| Model | Dung lượng (đo trên macOS) | Giấy phép |
+|---|---|---|
+| Whisper `base` (faster-whisper) | ~150 MB | MIT |
+| rembg `u2net_human_seg` | ~170 MB | Apache-2.0 |
+| YuNet (reframe) | ~230 KB | MIT |
+| VieNeu TTS | ~1,0 GB | Apache-2.0 |
+| ZeroTTS | ~1,7 GB | MIT (giọng đi kèm: chỉ đánh giá/demo) |
+
+Chi tiết giấy phép: `THIRD_PARTY_NOTICES.md`. Tải TTS lần đầu mất vài phút và có thể vượt giới hạn thời gian của tool MCP — hãy chạy
+`python scripts/ags_setup.py --warmup-tts` trong terminal trước.
 
 ---
 
-## PHẦN 2: DÙNG VỚI CODING AGENTS
+## PHẦN 2: DÙNG VỚI CODING AGENTS (chạy cục bộ)
 
-| Skill | Lệnh (chạy từ thư mục gốc repo) |
+| Skill | Lệnh (chạy từ thư mục skill bằng Python của venv) |
 |---|---|
 | `/ags-edit-az` | `python scripts/ags_cut_silence.py <video> [--min-silence 0.4] [--threshold-db -30] [--model base]` |
 | `/ags-edit-hook` | `python scripts/ags_text_behind_person.py <video> --text "<HOOK>" [--duration 3]` |
-| `/ags-edit-editorial` | `python scripts/ags_editorial_sub.py <video> [--style editorial\|karaoke] [--keywords "..."]` |
+| `/ags-edit-editorial` | `python scripts/ags_editorial_sub.py <video> [--style clean\|editorial\|karaoke] [--keywords "..."]` |
 | `/ags-voice-kinetic` | `python scripts/ags_voice_to_kinetic.py <audio>` |
 | `/ags-voice-doodle` | `python scripts/ags_voice_to_doodle.py <audio>` |
 | `/ags-reframe` | `python scripts/ags_reframe.py <video_ngang>` |
 | `/ags-clip-shorts` | `python scripts/ags_clip_shorts.py transcript <video>` rồi `... cut <video> --transcript ... --ranges ...` |
 | `/ags-edit-bds` | `python scripts/ags_bds_cli.py <draft\|render\|parcel\|subdivision\|ticker\|beats\|prompt> ...` |
+| `/ags-voice-sfx` | `python scripts/ags_tts.py voices\|synthesize --engine vieneu\|zerotts ...` · `python scripts/ags_sfx.py list\|mix ...` |
 | Kiểm định | `python harness/ags_anti_slop_guard.py <video> --contact-sheet <anh.jpg>` → exit `0` đạt · `2` cảnh báo · `1` lỗi |
 
 Quy tắc chung cho mọi agent nằm ở [`AGENTS.md`](AGENTS.md). Model Whisper: `--model` nhận mọi tên của faster-whisper
 (`tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo`…); model càng lớn càng chính xác nhưng tải và chạy lâu hơn.
 
+### Giọng đọc tiếng Việt và SFX (`/ags-voice-sfx`)
+- `ags_tts.py synthesize --engine vieneu --text-file loi.txt --out loi.wav` — văn bản UTF-8 → WAV mới (không ghi đè). Chỉ giọng có
+  sẵn, chạy cục bộ trên CPU, không clone, không dịch vụ từ xa. `ags_tts.py voices --engine ...` liệt kê giọng.
+- Ưu tiên `vieneu` (Apache-2.0, 25 giọng). Giọng `zerotts` (8 giọng) tác giả chỉ cho **đánh giá/demo**, phải nói rõ là giọng tổng hợp.
+- `ags_sfx.py mix video.mp4 --events events.json --out video_sfx.mp4` — chèn SFX Kenney CC0 theo mốc giây, giữ hình và tiếng gốc,
+  không rút ngắn video. `events.json`: `[{"file":"click_001.ogg","time":2.0,"gain":0.3}]`. `ags_sfx.py list` liệt kê 6 hiệu ứng có sẵn.
+
 ### 1. Claude Code
-- Mở thư mục repo trong Claude Code và chat tự nhiên:
+- Thả thư mục `ags-video-editing/` vào `~/.claude/skills/` (toàn máy) hoặc `<dự án>/.claude/skills/` (theo dự án) rồi chat:
   > *"Dùng skill ags-clip-shorts làm 3 short từ ~/Desktop/livestream.mp4, kiểm định từng short."*
-- MCP: lần đầu mở repo, Claude Code hỏi duyệt server `ags` khai báo trong `.mcp.json` (dùng `venv/bin/python` của repo —
-  macOS/Linux). Windows: tự khai báo server cùng tên ở phạm vi local (được ưu tiên hơn `.mcp.json`):
-  ```bat
-  claude mcp add ags -- C:/DUONG/DAN/ags-video-editing/venv/Scripts/python.exe C:/DUONG/DAN/ags-video-editing/mcp/ags_mcp_server.py
-  ```
-- Gọi skill bằng slash command ở mọi dự án: liên kết vào thư mục skill cá nhân của Claude Code:
-  ```bash
-  # macOS — chạy trong thư mục repo
-  mkdir -p ~/.claude/skills
-  ln -s "$PWD" ~/.claude/skills/ags-video-editing
-  for s in skills/*; do ln -s "$PWD/$s" ~/.claude/skills/"$(basename "$s")"; done
-  ```
-  ```bat
-  :: Windows (cmd) — chạy trong thư mục repo
-  mkdir "%USERPROFILE%\.claude\skills"
-  mklink /J "%USERPROFILE%\.claude\skills\ags-video-editing" "%CD%"
-  for /D %s in (skills\*) do mklink /J "%USERPROFILE%\.claude\skills\%~nxs" "%CD%\%s"
-  ```
-  Lệnh trong mỗi skill con tính từ thư mục gốc repo (hai cấp trên thư mục của skill đó).
+- Skill gốc `SKILL.md` điều phối 9 skill con trong `skills/`. Không cần `claude mcp add` để dùng — Claude Code chạy script qua terminal.
+- MCP (tuỳ chọn, dùng ở mọi dự án): `python scripts/ags_setup.py --register-claude-code` (cần lệnh `claude` trong PATH), hoặc lệnh do
+  `--print-mcp` in ra. Cũng có thể mở chính thư mục skill làm dự án: `.mcp.json` do installer sinh sẵn đường dẫn tuyệt đối.
 
 ### 2. OpenAI Codex
-- Codex tự đọc `AGENTS.md` ở gốc repo khi bạn mở repo. Chat: *"Chạy ags-edit-editorial kiểu karaoke cho video.mp4 rồi kiểm định."*
-- MCP: xem Phần 3.
+- Codex đọc `AGENTS.md` ở gốc thư mục làm việc. Mở thư mục skill làm workspace (hoặc copy/tham chiếu `AGENTS.md` vào dự án) rồi chat:
+  *"Chạy ags-edit-editorial kiểu karaoke cho video.mp4 rồi kiểm định."* Agent tự chạy bước kiểm tra/cài môi trường trong `AGENTS.md`.
+- MCP: Phần 3 (`--print-mcp` in khối `~/.codex/config.toml`).
 
 ### 3. Google Antigravity (IDE, 2.0, CLI)
-- Antigravity tự nạp `AGENTS.md` ở gốc workspace làm quy tắc luôn bật.
-- Muốn có slash command `/ags-…`: liên kết `skills/*` vào `.agents/skills/` của workspace, hoặc thư mục skill toàn máy
+- Antigravity nạp `AGENTS.md` ở gốc workspace làm quy tắc luôn bật. Muốn có slash command `/ags-…`, đặt thư mục `ags-video-editing/`
+  (và nếu cần các thư mục trong `skills/`) vào `.agents/skills/` của workspace, hoặc thư mục skill toàn máy
   (`~/.gemini/config/skills/` cho IDE/2.0, `~/.gemini/antigravity-cli/skills/` cho CLI).
-- MCP: Antigravity CLI `agy mcp add ags /DUONG/DAN/ags-video-editing/venv/bin/python /DUONG/DAN/ags-video-editing/mcp/ags_mcp_server.py`,
-  hoặc sửa `~/.gemini/config/mcp_config.json` (toàn máy) / `.agents/mcp_config.json` (theo workspace) — xem Phần 3.
+- MCP: Antigravity CLI `agy mcp add ags <python-venv> <ags_mcp_server.py>` hoặc `~/.gemini/config/mcp_config.json` (toàn máy) /
+  `.agents/mcp_config.json` (theo workspace) — `--print-mcp` in đủ lệnh với đường dẫn tuyệt đối.
 
 ### 4. Gemini CLI
-- Trong thư mục repo: `gemini extensions link .` — nạp `GEMINI.md` (nhập `AGENTS.md`) và MCP server `ags` khai báo trong
-  `gemini-extension.json` (dùng `venv/bin/python` của repo, chờ tối đa 30 phút mỗi lần gọi tool).
-- Windows: khai báo `mcpServers.ags` trong `~/.gemini/settings.json` với `venv\Scripts\python.exe` (Phần 3) — cấu hình
-  trong `settings.json` được ưu tiên hơn cấu hình của extension.
+- Chạy `python scripts/ags_setup.py` trước, rồi `gemini extensions link <thư mục skill>` — nạp `GEMINI.md` (nhập `AGENTS.md`) và MCP
+  server `ags` khai báo trong `gemini-extension.json` (interpreter `venv/bin/python` trên macOS/Linux; trên Windows installer đổi
+  thành `venv\Scripts\python.exe`; chờ tối đa 30 phút mỗi lần gọi tool).
+- Cấu hình trong `~/.gemini/settings.json` được ưu tiên hơn cấu hình của extension.
 - Theo geminicli.com, từ 18/06/2026 người dùng gói miễn phí / Google One chuyển sang Antigravity CLI — khi đó làm theo mục 3.
 
 ### 5. Cursor
-- `.cursor/rules/ags-video-editing.mdc` (Agent tự kéo vào khi việc liên quan video) và `AGENTS.md` được Cursor đọc sẵn.
-- MCP: `.cursor/mcp.json` khai báo server `ags` bằng `${workspaceFolder}/venv/bin/python` (macOS/Linux) — bật trong
-  **Customize → MCP**. Windows: thêm khối cấu hình (Phần 3) vào `~/.cursor/mcp.json` với `venv/Scripts/python.exe`.
+- `.cursor/rules/ags-video-editing.mdc` (Agent tự kéo vào khi việc liên quan video) và `AGENTS.md` được Cursor đọc sẵn khi mở
+  thư mục skill làm dự án.
+- MCP: installer sinh `.cursor/mcp.json` với đường dẫn tuyệt đối (không còn biến thay thế đường dẫn) — bật trong
+  **Customize → MCP**. Dùng ở dự án khác: dán khối từ `--print-mcp` vào `~/.cursor/mcp.json`.
 
 ---
 
-## PHẦN 3: MCP SERVER
+## PHẦN 3: MCP SERVER (tuỳ chọn)
 
-`mcp/ags_mcp_server.py` là MCP server (stdio, FastMCP). Mỗi tool gọi đúng script trong repo và trả về JSON:
-`output` (đường dẫn kết quả), `exit_code`, `stderr_tail`, `stdout_tail`.
+`mcp/ags_mcp_server.py` là MCP server (stdio, FastMCP). Mỗi tool gọi đúng script trong skill và trả về JSON:
+`output` (đường dẫn kết quả), `exit_code`, `stderr_tail`, `stdout_tail`. Server tự suy ra thư mục skill từ vị trí của nó nên không
+phụ thuộc cwd; mọi đường dẫn cấu hình là **tuyệt đối do installer sinh**, tránh lỗi client không giải được biến thay thế đường dẫn
+(biểu hiện: `ENOENT` khi khởi động server vì interpreter còn nguyên chuỗi biến).
 
 | Tool | Tham số chính |
 |---|---|
 | `cut_silence` | `input_path`, `output_path?`, `model?`, `min_silence?`, `threshold_db?` |
 | `text_behind_person` | `input_path`, `text`, `output_path?`, `duration?` |
-| `editorial_sub` | `input_path`, `output_path?`, `model?`, `style?` (`editorial`/`karaoke`), `highlight_color?`, `keywords?` |
+| `editorial_sub` | `input_path`, `output_path?`, `model?`, `style?` (`clean` mặc định/`editorial`/`karaoke`), `highlight_color?` (bỏ trống = màu của kiểu), `keywords?`, `script_path?` (file UTF-8 đúng lời đọc) |
 | `voice_to_kinetic` | `audio_path`, `output_path?`, `model?` |
 | `voice_to_doodle` | `audio_path`, `output_path?`, `model?` |
 | `reframe` | `input_path`, `output_path?` |
 | `clip_shorts_transcript` | `input_path`, `output_path?`, `model?` |
 | `clip_shorts_cut` | `input_path`, `transcript_path`, `ranges[]` (`start`, `end`, `hook?`, `name?`), `output_dir?`, `style?`, `highlight_color?`, `keywords?`, `reframe?` |
 | `bds_draft` | `name`, `clips[]`, `output_dir` hoặc `capcut=true`, `seconds?`, `bpm?`, `beat_step?`, `auto_beat?`, `title?`, `music?` |
-| `bds_render` | `images[]`, `output_path`, `seconds?`, `bpm?`, `beat_step?`, `auto_beat?`, `music?`, `voice?`, `transition?` (`cut`/`wipe`), `transition_seconds?` |
+| `bds_render` | `output_path`, `clips[]` (hoặc `images[]`; nhận video và ảnh), `seconds?`, `bpm?`, `beat_step?`, `auto_beat?`, `music?`, `voice?`, `transition?` (`cut`/`wipe`/`dissolve`), `transition_seconds?`, `zoom?` (`auto`/`none`/`subtle`), `grade?` (`none`/`natural`/`warm`) |
 | `anti_slop_guard` | `video_path`, `contact_sheet?`, `frames?` |
+| `tts_voices` | `engine` (`vieneu`/`zerotts`) |
+| `tts_synthesize` | `engine`, `text_path`, `output_path` (WAV mới), `voice?` |
+| `sfx_list` | — |
+| `sfx_mix` | `input_path`, `events[]` (`file`, `time`, `gain?`), `output_path` |
 
-**Bước 1 — cài thư viện MCP (tuỳ chọn):**
+**Lấy cấu hình đúng cho máy này:**
 ```bash
-./venv/bin/pip install -r requirements-mcp.txt          # macOS
-venv\Scripts\pip install -r requirements-mcp.txt        # Windows
+python scripts/ags_setup.py --print-mcp
 ```
-**Bước 2 — khai báo server.** Thay `/DUONG/DAN/ags-video-editing` bằng đường dẫn tuyệt đối của repo. Windows: `command` là
-`C:/DUONG/DAN/ags-video-editing/venv/Scripts/python.exe` (dùng `/` hoặc `\\` trong JSON). Xử lý video mất vài phút:
-client nào giới hạn thời gian gọi tool thì nâng lên.
+In ra lệnh `claude mcp add ...` (Claude Code), `agy mcp add ...` (Antigravity CLI), khối JSON cho Claude Desktop
+(`claude_desktop_config.json`: macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`) · Antigravity
+(`~/.gemini/config/mcp_config.json`, `.agents/mcp_config.json`) · Gemini CLI (`~/.gemini/settings.json`, thêm `"timeout": 1800000`) ·
+Cursor (`~/.cursor/mcp.json`), và khối TOML cho OpenAI Codex (`~/.codex/config.toml`, `tool_timeout_sec = 1800` — mặc định Codex chỉ
+chờ tool 60 giây). Xử lý video mất vài phút: client nào giới hạn thời gian gọi tool thì nâng lên.
 
-**Claude Code** — `.mcp.json` có sẵn trong repo (macOS/Linux); hoặc:
-```bash
-claude mcp add --transport stdio ags -- /DUONG/DAN/ags-video-editing/venv/bin/python /DUONG/DAN/ags-video-editing/mcp/ags_mcp_server.py
-```
-**Claude Desktop** — `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/`, Windows: `%APPDATA%\Claude\`);
-**Antigravity** — `~/.gemini/config/mcp_config.json` hoặc `.agents/mcp_config.json`; **Gemini CLI** — `~/.gemini/settings.json`
-(thêm `"timeout": 1800000`); **Cursor** — `~/.cursor/mcp.json`. Cùng một khối:
-```json
-{
-  "mcpServers": {
-    "ags": {
-      "command": "/DUONG/DAN/ags-video-editing/venv/bin/python",
-      "args": ["/DUONG/DAN/ags-video-editing/mcp/ags_mcp_server.py"]
-    }
-  }
-}
-```
-**OpenAI Codex** — `~/.codex/config.toml` (mặc định Codex chỉ chờ tool 60 giây):
-```toml
-[mcp_servers.ags]
-command = "/DUONG/DAN/ags-video-editing/venv/bin/python"
-args = ["/DUONG/DAN/ags-video-editing/mcp/ags_mcp_server.py"]
-tool_timeout_sec = 1800
-```
+Installer cũng tự ghi `.mcp.json` (Claude Code và client đọc `.mcp.json`) và `.cursor/mcp.json` trong thư mục skill, mỗi file là
+`{"mcpServers": {"ags": {"type": "stdio", "command": "<venv python tuyệt đối>", "args": ["<server tuyệt đối>"], "cwd": "<thư mục skill>"}}}`;
+các server khác trong file được giữ nguyên. Hai file này chứa đường dẫn của riêng máy bạn nên không nằm trong zip và không commit.
 
 ---
 
-## PHẦN 4: DÙNG TRÊN GIAO DIỆN WEB (CLAUDE.AI & CHATGPT.COM)
+## PHẦN 4: DÙNG TRÊN GIAO DIỆN WEB (CLAUDE.AI & CHATGPT.COM) — CHỈ LẬP KẾ HOẠCH, KHÔNG RENDER
 
-### Claude.ai — tải skill dạng zip
-1. Trên máy: `python scripts/ags_build_skill_zips.py` → `dist/<tên-skill>.zip` (mỗi zip chứa thư mục skill ở cấp cao nhất,
-   kèm `scripts/`, `harness/` cần thiết; script tự kiểm frontmatter theo chuẩn Agent Skills trước khi đóng gói).
-2. claude.ai → **Customize → Skills → "+" → Upload a skill** → chọn file zip. Chỉ tải lên tài khoản của chính bạn —
-   giấy phép không cho chia sẻ zip.
-3. Giới hạn: theo tài liệu của Anthropic, sandbox chạy code của Claude không có Internet và danh sách thư viện cài sẵn
-   không có FFmpeg hay faster-whisper — lệnh render/bóc băng có thể không chạy được trên claude.ai (chưa kiểm chứng).
-   Khi đó Claude vẫn dùng skill để lên kịch bản, chọn đoạn short, soạn lệnh cho bạn chạy trên máy.
+**Nói thẳng:** web không bảo đảm có FFmpeg, faster-whisper, quyền cài thư viện hay Internet trong môi trường chạy code, và không tự
+nạp được zip cài đặt này. Vì vậy **bộ này không render video trên claude.ai hay ChatGPT web**, và chưa được kiểm chứng ở đó.
+Web chỉ giúp: chọn đoạn short từ transcript, viết hook/kịch bản/văn bản lồng tiếng, soát ảnh contact sheet bạn gửi, và soạn lệnh
+để bạn (hoặc agent trên máy bạn) chạy. Muốn render thật: dùng Phần 2.
 
-### Claude.ai — Project (đạo diễn kịch bản)
+### claude.ai — skill lập kế hoạch (`ags-video-editing-web.zip`)
+1. claude.ai → **Customize → Skills → "+" → Upload a skill** → chọn `ags-video-editing-web.zip`. Chỉ tải lên tài khoản của chính bạn
+   (giấy phép không cho chia sẻ zip).
+2. Zip này chỉ chứa hướng dẫn (`SKILL.md` + quy trình chọn đoạn + quy trình kiểm định), **không có script** — skill được viết để
+   Claude nói rõ giới hạn và không tự nhận đã render. Muốn chạy thật: dùng bản cài cục bộ `ags-video-editing.zip` (Phần 1–2).
+
+### claude.ai — Project (đạo diễn kịch bản)
 1. Tạo **Project**, tải `AGENTS.md`, `README.md` và các `skills/*/SKILL.md` vào **Project Knowledge**.
 2. Dán vào **Custom Instructions**:
    ```text
-   Bạn là Chuyên gia Đạo diễn & Biên tập Video của AGS (Agent Space) — bộ AGS Video Editing.
-   Khi tôi tải lên video, file ghi âm, transcript JSON hoặc kịch bản:
-   1. Bóc băng / đọc lời thoại chính xác, đủ dấu tiếng Việt.
-   2. Đánh dấu từ đệm, nói lắp, khoảng lặng cần cắt.
-   3. Với transcript của ags_clip_shorts: chọn đoạn short theo skills/ags-clip-shorts/references/chon-doan-short.md
+   Bạn là Trợ lý Lập kế hoạch Dựng Video của AGS (Agent Space) — bộ AGS Video Editing. Bạn không render được video.
+   Khi tôi gửi transcript JSON, kịch bản hoặc ảnh contact sheet:
+   1. Đọc lời thoại chính xác, đủ dấu tiếng Việt; đánh dấu từ đệm, nói lắp, khoảng lặng cần cắt.
+   2. Với transcript của ags_clip_shorts: chọn đoạn short theo skills/ags-clip-shorts/references/chon-doan-short.md
       và trả về ranges.json.
-   4. Viết lệnh AGS tương ứng để tôi chạy trên máy.
+   3. Viết lệnh AGS tương ứng để tôi chạy trên máy; không nói đã chạy, không bịa số đo.
    ```
 
 ### ChatGPT.com (Custom GPT)
 1. **Explore GPTs → Create a GPT** (hoặc Custom Instructions cá nhân).
-2. Dán nội dung `adapters/chatgpt_custom_instructions.md` vào ô **Instructions**.
+2. Dán nội dung `adapters/chatgpt_custom_instructions.md` vào ô **Instructions** (đã ghi rõ không render).
 3. Chat: *"Đây là transcript JSON của livestream, chọn 3 đoạn làm short và viết ranges.json."*
 
 ---
@@ -184,6 +199,18 @@ python harness/ags_anti_slop_guard.py video.mp4 --contact-sheet video_sheet.jpg
 
 ---
 
+## PHẦN 6: XỬ LÝ SỰ CỐ
+| Triệu chứng | Cách xử lý |
+|---|---|
+| `ags_setup.py` exit `3` | Thiếu Python 3.11/3.12 hoặc FFmpeg — chạy lại với `--yes` hoặc cài theo lệnh trong stderr |
+| Windows: vừa cài FFmpeg vẫn báo thiếu | Mở terminal mới (PATH chỉ cập nhật cho phiên mới), rồi chạy lại |
+| Phụ đề không hiện | `--check` báo `ffmpeg.libass: false` — cài bản FFmpeg đầy đủ (Homebrew, Gyan.FFmpeg) |
+| Đã dời/đổi tên thư mục skill, MCP báo không tìm thấy Python | Chạy lại `CAI-DAT-MAC.sh` / `CAI-DAT-WIN.bat` để dựng lại venv và cấu hình |
+| Tool TTS MCP hết giờ ở lần đầu | Chạy `python scripts/ags_setup.py --warmup-tts` trong terminal, rồi gọi lại |
+| `Missing optional TTS dependency` | Đã cài `--core`; chạy lại installer không kèm `--core` |
+
+---
+
 ## 📊 BẢNG TRA CỨU NHANH
 
 | Bạn muốn | Chat với AI | Công cụ chạy |
@@ -195,11 +222,9 @@ python harness/ags_anti_slop_guard.py video.mp4 --contact-sheet video_sheet.jpg
 | Video ngang → dọc | *"Chuyển podcast ngang này sang 9:16 bám mặt"* | `ags_reframe.py` |
 | Video dài → short | *"Cắt 3 short hay nhất từ livestream này"* | `ags_clip_shorts.py transcript` → `cut` |
 | Video Bất Động Sản | *"Dựng video đất nền, cắt theo nhạc, có giọng đọc"* | `ags_bds_cli.py render --auto-beat --voice` |
+| Ghép clip stock/quay tay + lời đọc | *"Ghép các clip này thành video dọc 30 giây, đọc lời này, hoà mờ, zoom nhẹ, có phụ đề và SFX"* | `ags_tts.py` → `ags_bds_cli.py render --clips --voice` → `ags_editorial_sub.py` → `ags_sfx.py mix` |
+| Đọc văn bản bằng giọng Việt | *"Đọc đoạn này bằng giọng nữ, làm video chữ"* | `ags_tts.py` → `ags_voice_to_kinetic.py` |
+| Chèn tiếng click/ting | *"Chèn tiếng click ở giây 2 và 5"* | `ags_sfx.py mix` |
 | Kiểm tra chất lượng | *"Chạy kiểm định và xem contact sheet"* | `harness/ags_anti_slop_guard.py` |
 
 ---
-
-## ⚖️ GIẤY PHÉP
-AGS Video Editing dùng **PolyForm Strict License 1.0.0** (`LICENSE`, giải thích tiếng Việt trong `LICENSE-VI.md`): được tải,
-cài, chạy cho mục đích phi thương mại; không phân phối lại, không sửa đổi, không dùng thương mại. Cấp phép thương mại:
-liên hệ Agent Space (AGS). Thành phần bên thứ ba: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -29,3 +29,7 @@ drafts/
 
 # Zip skill dựng bởi scripts/ags_build_skill_zips.py — không commit
 dist/
+
+# Cấu hình MCP do scripts/ags_setup.py sinh với đường dẫn tuyệt đối của máy — không commit
+.mcp.json
+.cursor/mcp.json

@@ -7,6 +7,7 @@ Mặc định ghi vào thư mục tạm rồi xoá; --out giữ lại ảnh/vide
 """
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -49,8 +50,8 @@ def make_media(out):
            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", video)
     music = out / "music.wav"
     ffmpeg("-f", "lavfi", "-i", "sine=frequency=220:duration=8", music)
-    voice = out / "voice.wav"  # "giọng" giả: tiếng 300 Hz bật/tắt mỗi 0.5 s
-    ffmpeg("-f", "lavfi", "-i", "sine=frequency=300:duration=8", "-af", "volume='lt(mod(t,1),0.5)':eval=frame", voice)
+    voice = out / "voice.wav"  # "giọng" giả 4.5 s: tiếng 300 Hz bật/tắt mỗi 0.5 s
+    ffmpeg("-f", "lavfi", "-i", "sine=frequency=300:duration=4.5", "-af", "volume='lt(mod(t,1),0.5)':eval=frame", voice)
     # Ảnh nền ngang 1920x1080 có lưới + vòng tròn: lộ ngay nếu bị bóp méo
     base = out / "satellite_bg.jpg"
     img = Image.new("RGB", (1920, 1080), (34, 60, 48))
@@ -173,8 +174,8 @@ def test_land_parcel(out, base):
 
 
 def test_renderer(out, slides, music):
-    mp4 = AgsDirectRenderer(1080, 1920, 30).render_image_slideshow(slides, [2.0] * len(slides),
-                                                                   str(out / "bds_slideshow.mp4"), str(music))
+    mp4 = AgsDirectRenderer(1080, 1920, 30).render_slideshow(slides, [2.0] * len(slides),
+                                                             str(out / "bds_slideshow.mp4"), str(music))
     info = probe(mp4)
     v = next(s for s in info["streams"] if s["codec_type"] == "video")
     a = next(s for s in info["streams"] if s["codec_type"] == "audio")
@@ -195,7 +196,7 @@ def test_beats(out):
 
 
 def test_renderer_wipe_voice(out, slides, music, voice):
-    mp4 = AgsDirectRenderer(1080, 1920, 30).render_image_slideshow(
+    mp4 = AgsDirectRenderer(1080, 1920, 30).render_slideshow(
         slides, [2.0] * len(slides), str(out / "bds_wipe_voice.mp4"), str(music), str(voice), "wipe", 0.5)
     info = probe(mp4)
     a = next(s for s in info["streams"] if s["codec_type"] == "audio")
@@ -204,13 +205,100 @@ def test_renderer_wipe_voice(out, slides, music, voice):
     return mp4
 
 
+def frame_hash(video, second):
+    data = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(second), "-i", str(video), "-frames:v", "1",
+                           "-f", "image2pipe", "-vcodec", "bmp", "-"], check=True, capture_output=True).stdout
+    assert data, f"không đọc được khung {second}s của {video}"
+    return hashlib.md5(data).hexdigest()
+
+
+def expect_error(label, needle, fn):
+    try:
+        fn()
+    except ValueError as exc:
+        assert needle in str(exc), f"{label}: thông báo lỗi lạ: {exc}"
+    else:
+        raise AssertionError(f"{label}: phải báo lỗi")
+
+
+def test_renderer_video(out, video, base, voice, music):
+    renderer = AgsDirectRenderer(1080, 1920, 30)
+    # Video thật (clip.mp4 dài 3 s, testsrc2 có bộ đếm chạy) + ảnh; dissolve + zoom subtle + giọng 4.5 s
+    mp4 = renderer.render_slideshow([str(video), str(base)], [2.4, 2.6], str(out / "bds_video_dissolve.mp4"),
+                                    None, str(voice), "dissolve", 0.5, "subtle")
+    info = probe(mp4)
+    v = next(s for s in info["streams"] if s["codec_type"] == "video")
+    a = next(s for s in info["streams"] if s["codec_type"] == "audio")
+    assert (v["width"], v["height"]) == (1080, 1920)
+    assert abs(float(info["format"]["duration"]) - 5.0) < 0.2, info["format"]["duration"]
+    assert a["sample_rate"] == "48000", a["sample_rate"]
+    # Chuyển động thật: không zoom + cắt cứng thì hai khung cách nhau 1.2 s của cùng clip phải khác nhau
+    still = renderer.render_slideshow([str(video)], [2.0], str(out / "bds_video_cut.mp4"), zoom="none")
+    assert frame_hash(still, 0.2) != frame_hash(still, 1.4), "clip video bị biến thành ảnh tĩnh"
+    # Đầu vào sai phải báo lỗi rõ, không render thiếu/cắt giọng
+    expect_error("giọng dài hơn hình", "cắt cụt",
+                 lambda: renderer.render_slideshow([str(base)], [2.0], str(out / "e1.mp4"), None, str(music)))
+    expect_error("video ngắn hơn cần", "chỉ dài",
+                 lambda: renderer.render_slideshow([str(video)], [4.0], str(out / "e2.mp4")))
+    for bad in (0, -1.0, float("nan"), float("inf"), True):
+        expect_error(f"thời lượng {bad!r}", "hữu hạn",
+                     lambda bad=bad: renderer.render_slideshow([str(base)], [bad], str(out / "e3.mp4")))
+    expect_error("thời gian chuyển NaN", "hữu hạn", lambda: renderer.render_slideshow(
+        [str(base), str(base)], [2.0, 2.0], str(out / "e4.mp4"), transition="dissolve",
+        transition_seconds=float("nan")))
+    expect_error("chuyển cảnh dài hơn cảnh", "ngắn hơn", lambda: renderer.render_slideshow(
+        [str(base), str(base)], [1.0, 1.0], str(out / "e5.mp4"), transition="wipe", transition_seconds=1.0))
+    expect_error("file không tồn tại", "Không thấy file",
+                 lambda: renderer.render_slideshow([str(out / "nope.mp4")], [1.0], str(out / "e6.mp4")))
+    expect_error("zoom lạ", "zoom phải",
+                 lambda: renderer.render_slideshow([str(base)], [1.0], str(out / "e7.mp4"), zoom="shake"))
+    expect_error("đầu ra trùng đầu vào", "trùng",
+                 lambda: renderer.render_slideshow([str(video)], [1.0], str(video)))
+    assert not any((out / f"e{i}.mp4").exists() for i in range(1, 8)), "lỗi kiểm tra nhưng vẫn ghi file"
+    return mp4
+
+
+def frame_count(video):
+    out = subprocess.run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries",
+                          "stream=nb_read_frames", "-of", "default=noprint_wrappers=1:nokey=1", str(video)],
+                         check=True, capture_output=True, text=True).stdout
+    return int(out.strip())
+
+
+def test_thirty_seconds_ten_clips(out, voice):
+    # 10 nguồn KHÁC NHAU (mỗi file 3.5 s: 3 s khung + 0.5 s chồng dissolve), mỗi nguồn đúng một ô 3 s, không lặp
+    renderer = AgsDirectRenderer(270, 480, 30)
+    clips = []
+    for k in range(10):
+        clip = out / f"slot_{k}.mp4"
+        ffmpeg("-f", "lavfi", "-i", "testsrc2=size=480x270:rate=30:duration=3.5", "-vf", f"hue=h={36 * k}",
+               "-c:v", "libx264", "-pix_fmt", "yuv420p", clip)
+        clips.append(str(clip))
+    long_voice = out / "voice27.wav"  # giọng 27 s ngắn hơn hình: đệm im lặng, không kéo giãn
+    ffmpeg("-f", "lavfi", "-i", "sine=frequency=300:duration=27", long_voice)
+    mp4 = renderer.render_slideshow(clips, [3.0] * 10, str(out / "thirty.mp4"), None, str(long_voice),
+                                    "dissolve", 0.5, "subtle", "warm")
+    info = probe(mp4)
+    assert abs(float(info["format"]["duration"]) - 30.0) < 0.03, info["format"]["duration"]
+    assert frame_count(mp4) == 900, frame_count(mp4)
+    hashes = [frame_hash(mp4, 3 * k + 1.5) for k in range(10)]
+    assert len(set(hashes)) == 10, "mỗi ô 3 s phải là một nguồn riêng, không lặp"
+    # Chỉnh màu: cùng nguồn, grade khác thì pixel khác; grade lạ báo lỗi
+    plain = renderer.render_slideshow(clips[:1], [3.0], str(out / "grade_none.mp4"))
+    graded = renderer.render_slideshow(clips[:1], [3.0], str(out / "grade_natural.mp4"), grade="natural")
+    assert frame_hash(plain, 1.0) != frame_hash(graded, 1.0), "grade natural không đổi màu"
+    expect_error("grade lạ", "grade phải", lambda: renderer.render_slideshow(
+        clips[:1], [3.0], str(out / "e8.mp4"), grade="neon"))
+    assert not (out / "e8.mp4").exists()
+
+
 def run_cli(*args):
     res = subprocess.run([sys.executable, str(CLI), *[str(a) for a in args]], capture_output=True, text=True)
     assert res.returncode == 0, f"CLI {args[0]} lỗi: {res.stderr}"
     return json.loads(res.stdout)
 
 
-def test_cli(out, video, music, base):
+def test_cli(out, video, music, voice, base):
     assert run_cli("beats", "--bpm", 128, "--beat-step", 8, "--duration", 15)["cuts"] == [3.75, 7.5, 11.25, 15.0]
     assert abs(run_cli("beats", "--music", out / "beats.wav")["bpm"] - 120) < 1
     assert run_cli("prompt", "--type", "virtual_staging", "--name", "Mẫu", "--location", "Hà Nội")["sound_fx"]
@@ -228,6 +316,13 @@ def test_cli(out, video, music, base):
     render = run_cli("render", "--images", parcel, grid, ticker, "--bpm", 120, "--beat-step", 2,
                      "--music", music, "--out", out / "cli_render.mp4")
     assert abs(float(probe(render["output"])["format"]["duration"]) - 3.0) < 0.2
+    mixed = run_cli("render", "--clips", video, parcel, "--seconds", 2.4, "--transition", "dissolve",
+                    "--zoom", "subtle", "--voice", voice, "--out", out / "cli_video.mp4")
+    assert (mixed["videos"], mixed["slides"], mixed["cut_times"], mixed["total_seconds"]) == (1, 2, [2.4], 4.8), mixed
+    assert abs(float(probe(mixed["output"])["format"]["duration"]) - 4.8) < 0.2
+    short = subprocess.run([sys.executable, str(CLI), "render", "--clips", str(video), "--seconds", "1.0",
+                            "--voice", str(voice), "--out", str(out / "cli_short.mp4")], capture_output=True, text=True)
+    assert short.returncode != 0 and "cắt cụt" in short.stderr and not (out / "cli_short.mp4").exists(), short
 
 
 def main():
@@ -246,7 +341,12 @@ def main():
             ("Render slideshow FFmpeg", lambda: test_renderer(out, test_land_parcel(out, base), music)),
             ("Render wipe + giọng đọc (duck nhạc)",
              lambda: test_renderer_wipe_voice(out, test_land_parcel(out, base), music, voice)),
-            ("CLI: beats/prompt/parcel/subdivision/ticker/draft/render", lambda: test_cli(out, video, music, base)),
+            ("Render video thật + dissolve + zoom + giọng; kiểm tra đầu vào",
+             lambda: test_renderer_video(out, video, test_land_parcel(out, base)[0], voice, music)),
+            ("30 giây = 10 nguồn × 3 s, dissolve 0,5 s, không lặp, chỉnh màu",
+             lambda: test_thirty_seconds_ten_clips(out, voice)),
+            ("CLI: beats/prompt/parcel/subdivision/ticker/draft/render",
+             lambda: test_cli(out, video, music, voice, base)),
         ]
         for i, (label, fn) in enumerate(steps, 1):
             fn()

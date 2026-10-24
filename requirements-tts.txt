@@ -1,0 +1,5 @@
+# Optional local CPU inference; model weights download on first use, not during install.
+vieneu==3.8.3
+zerotts==0.1.5
+# 1.30 rejects Hugging Face symlinked external ONNX data; verified engine version below.
+onnxruntime==1.23.2

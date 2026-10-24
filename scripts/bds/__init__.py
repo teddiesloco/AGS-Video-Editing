@@ -4,7 +4,7 @@ AGS (Agent Space) — engine dựng video Bất Động Sản.
 - AgsCapCutDraft: sinh draft CapCut desktop (draft_info.json + draft_content.json + draft_meta_info.json).
 - AgsCinematicStyle: Công thức Dự án Đô thị (Cinematic) — mốc cắt theo beat nhạc, prompt AI hook.
 - AgsLandParcelStyle: Công thức Đất nền (GIS) — viền ranh giới thửa đất, lưới phân lô, ticker bản tin.
-- AgsDirectRenderer: render slideshow 9:16 bằng FFmpeg (Ken Burns, wipe, duck nhạc dưới giọng đọc), không cần CapCut.
+- AgsDirectRenderer: render 9:16 bằng FFmpeg từ ảnh và/hoặc video thật (zoom nhẹ, cut/wipe/dissolve, duck nhạc dưới giọng đọc), không cần CapCut.
 - detect_beats / beat_durations: dò BPM + mốc beat từ file nhạc (numpy) để cắt cảnh đúng nhịp.
 
 Package dùng chung `ags_common` nằm ở thư mục `scripts/` (được đưa vào sys.path khi chạy scripts/ags_bds_cli.py).
