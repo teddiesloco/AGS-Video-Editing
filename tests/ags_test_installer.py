@@ -32,7 +32,7 @@ except ImportError:
 
 OURS = ("ags", "ags-auto-editor", "ags-reels")
 FOREIGN = {"command": "/usr/bin/true", "args": ["--khach"]}
-JSON_CONFIGS = {"antigravity": ".gemini/antigravity/mcp_config.json", "claude": ".claude.json", "cursor": ".cursor/mcp.json"}
+JSON_CONFIGS = {"antigravity": ".gemini/config/mcp_config.json", "claude": ".claude.json", "cursor": ".cursor/mcp.json"}
 CODEX_SEED = ('model = "gpt-5"\n\n# máy chủ riêng của khách\n[mcp_servers.khach]\ncommand = "/usr/bin/true"\n'
               'args = ["--khach"]\n\n[mcp_servers.khach.env]\nTOKEN_KHACH = "giu-nguyen"\n')
 
@@ -94,7 +94,7 @@ class InstallAllClientsTest(unittest.TestCase):
                 self.assert_our_server(codex["mcp_servers"][name])
 
         self.assertTrue({"ags-video-editing", "ags-auto-editor", "ags-reels-footage", "ags-edit-bds"} <= set(result["skills"]))
-        for skills_dir in (".claude/skills", ".codex/skills", ".gemini/antigravity/skills"):
+        for skills_dir in (".claude/skills", ".codex/skills", ".gemini/config/skills", ".gemini/antigravity-cli/skills"):
             self.assertEqual(sorted(p.name for p in (self.home / skills_dir).iterdir()), result["skills"], skills_dir)
             skill = (self.home / skills_dir / "ags-edit-bds" / "SKILL.md").read_text(encoding="utf-8")
             self.assertIn(f"SKILL_DIR thật: `{ROOT}`", skill)
@@ -116,7 +116,7 @@ class InstallAllClientsTest(unittest.TestCase):
         self.assertIn("ags-studio", result["skills"])
         self.assertTrue((ROOT / "scripts" / "ags_studio.py").is_file(), "skill trỏ tới lệnh phải có trong gói")
         # Cursor nạp thêm ~/.claude/skills và ~/.codex/skills (cursor.com/docs/skills, mục tương thích) + rule trỏ tới skill.
-        for skills_dir in (".claude/skills", ".codex/skills", ".gemini/antigravity/skills"):
+        for skills_dir in (".claude/skills", ".codex/skills", ".gemini/config/skills", ".gemini/antigravity-cli/skills"):
             skill = (self.home / skills_dir / "ags-studio" / "SKILL.md").read_text(encoding="utf-8")
             self.assertTrue(skill.startswith("---\nname: ags-studio\n"), skills_dir)
             self.assertIn(f"SKILL_DIR thật: `{ROOT}`", skill)
@@ -124,6 +124,18 @@ class InstallAllClientsTest(unittest.TestCase):
         self.assertIn("skills/ags-studio/SKILL.md", (self.home / ".cursor/rules/ags-video-editing.mdc").read_text("utf-8"))
         extension_guide = (self.home / ".gemini/extensions/ags-video-editing/AGENTS.md").read_text("utf-8")
         self.assertIn("skills/ags-studio/SKILL.md", extension_guide)
+
+    def test_marketing_skill_reaches_host_discovery_roots(self):
+        proc, result = run_setup(self.home)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("ags-marketing-editor", result["skills"])
+        for root in (".claude/skills", ".codex/skills", ".gemini/config/skills", ".gemini/antigravity-cli/skills"):
+            skill = (self.home / root / "ags-marketing-editor" / "SKILL.md").read_text("utf-8")
+            self.assertTrue(skill.startswith("---\nname: ags-marketing-editor\n"), root)
+            frontmatter = skill.split("---", 2)[1]
+            self.assertNotIn("\ncompatibility:", frontmatter, root)
+            self.assertIn("scripts/ags_marketing_editor.py", skill)
+            self.assertIn(f"SKILL_DIR thật: `{ROOT}`", skill)
 
     def test_corrupt_claude_json_fails_with_code_while_other_clients_install(self):
         seed(self.home)

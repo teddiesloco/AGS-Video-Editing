@@ -100,12 +100,16 @@ def wrap_tokens(texts, font, spacing, limit):
     return lines
 
 
-def fit_layout(texts, font_key, base_size, spacing, limit, max_lines, floor=None):
+def fit_layout(texts, font_key, base_size, spacing, limit, max_lines, floor=None, font_file=None):
     """(cỡ chữ, font, dòng): giữ `base_size`, chỉ hạ dần (tới `floor`, mặc định MIN_FONT_SCALE) khi vượt `max_lines` dòng."""
     floor = max(1, floor or round(base_size * MIN_FONT_SCALE))
     size = base_size
     while True:
-        font = load_font(font_key, size)
+        if font_file:
+            from PIL import ImageFont
+            font = ImageFont.truetype(str(font_file), size)
+        else:
+            font = load_font(font_key, size)
         lines = wrap_tokens(texts, font, spacing, limit)
         if len(lines) <= max_lines or size <= floor:
             return size, font, lines
@@ -136,7 +140,7 @@ def caption_markup(texts, lines, scales, highlighted=(), color="", colors=None, 
 
 
 def write_ass(groups, ass_path, width, height, style=DEFAULT_STYLE, highlight=None, keywords=(), hook=None,
-              keyword_colors=None, text_color=None, size_ratio=None, label=None, label_terms=None):
+              keyword_colors=None, text_color=None, size_ratio=None, label=None, label_terms=None, font_file=None):
     """Ghi phụ đề .ASS đúng kích thước video; trả về thư mục font cho bộ lọc subtitles.
 
     groups: các cụm từ [(start, end, word)] (giây, tính từ đầu video); hook: (chữ, giây) hiện ở đỉnh vùng an toàn
@@ -151,6 +155,11 @@ def write_ass(groups, ass_path, width, height, style=DEFAULT_STYLE, highlight=No
     base_color = ass_color(text_color) if text_color else "&H00FFFFFF"
     reset = base_color if text_color else "&HFFFFFF"
     word_colors = {int(i): ass_color(c) for i, c in (keyword_colors or {}).items()}
+    if font_file:
+        from PIL import ImageFont
+        persona_family = ImageFont.truetype(str(font_file), 12).getname()[0]
+    else:
+        persona_family = font_family(cfg["font"])
     x0, y0, x1, y1 = safe_box(width, height)
     size = round(min(width, height) * (size_ratio or cfg["size"]))
     outline = max(2, size // cfg["outline_div"])
@@ -168,8 +177,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caption,{font_family(cfg["font"])},{size},{base_color},&H000000FF,&H00000000,&H80000000,{cfg["bold"]},0,0,0,100,100,{cfg["spacing"]},0,1,{outline},{shadow},2,{margins},{height - y1 + padding},1
-Style: Hook,{font_family("bold")},{hook_size},{color},&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,{max(3, hook_size // 12)},0,8,{margins},{y0 + padding},1
+Style: Caption,{persona_family},{size},{base_color},&H000000FF,&H00000000,&H80000000,{cfg["bold"]},0,0,0,100,100,{cfg["spacing"]},0,1,{outline},{shadow},2,{margins},{height - y1 + padding},1
+Style: Hook,{persona_family if font_file else font_family("bold")},{hook_size},{color},&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,{max(3, hook_size // 12)},0,8,{margins},{y0 + padding},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -185,9 +194,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         Hook hạ tới HOOK_MIN_SIZE trước, chỉ khi vẫn quá 3 dòng mới hạ tiếp như phụ đề."""
         key, base, spacing = ("bold", hook_size, 0) if name == "Hook" else (cfg["font"], size, cfg["spacing"])
         floor = round(min(width, height) * HOOK_MIN_SIZE) if name == "Hook" else caption_floor
-        fs, font, lines = fit_layout(texts, key, base, spacing, limit, MAX_LINES[name], floor)
+        fs, font, lines = fit_layout(texts, key, base, spacing, limit, MAX_LINES[name], floor, font_file)
         if len(lines) > MAX_LINES[name] and floor:
-            fs, font, lines = fit_layout(texts, key, base, spacing, limit, MAX_LINES[name])
+            fs, font, lines = fit_layout(texts, key, base, spacing, limit, MAX_LINES[name], font_file=font_file)
         return fs, lines, [min(100.0, 100 * limit / max(1.0, text_width(font, t, spacing))) for t in texts]
 
     def dialogue(start, end, name, fs, body):
@@ -238,7 +247,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                       f"{{\\an1\\pos({x0 + padding},{round(y1 - padding - 2.6 * size)})\\fs{label_size}}}"
                       f"{ass_text(label)}")
     Path(ass_path).write_text(header + "\n".join(events) + "\n", encoding="utf-8")
-    return Path(font_path(cfg["font"])).parent
+    return Path(font_file or font_path(cfg["font"])).parent
 
 
 def subtitles_filter(ass_path, fonts_dir):

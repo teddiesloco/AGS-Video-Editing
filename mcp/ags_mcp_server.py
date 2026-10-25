@@ -383,5 +383,56 @@ def ags_studio_profile(samples: List[str]) -> dict:
     return _studio("ags_vi_script.py", "profile", *[part for sample in samples for part in ("--sample", sample)])
 
 
+@mcp.tool()
+def marketing_editor_inspect(source: str, transcript_path: str, model: str = "base") -> dict:
+    """Đọc media cục bộ và bóc băng từng từ để agent chọn ý marketing từ nguồn thật.
+    Không upload hay gọi API trả phí; model Whisper cần có trên máy để chạy offline."""
+    assert_client_licensed()
+    from ags_marketing_editor import inspect_source
+
+    return inspect_source(source, transcript_path, model)
+
+
+@mcp.tool()
+def marketing_editor_validate(plan_path: str) -> dict:
+    """Kiểm plan JSON do agent viết: nguồn, mốc từ, persona, provenance và hash; không cấp duyệt.
+    Kết quả kỹ thuật không chứng minh ý nghĩa, chất lượng hình hay tương thích host."""
+    assert_client_licensed()
+    from ags_marketing_editor import validate_plan
+
+    return validate_plan(plan_path)
+
+
+@mcp.tool()
+def marketing_editor_approve(plan_path: str, stage: str, reason: str) -> dict:
+    """Ghi sự đồng ý RÕ RÀNG của chủ cho plan hoặc draft, reason chép lời duyệt và ngữ cảnh.
+    Chỉ gọi sau khi chủ xem đúng plan/draft hiện tại; draft phải được xem/nghe trước khi duyệt xuất final.
+    Bản ghi cục bộ không xác thực danh tính người duyệt. Thay nội dung cần duyệt lại."""
+    assert_client_licensed()
+    from ags_marketing_editor import approve_plan
+
+    return approve_plan(plan_path, stage, reason)
+
+
+@mcp.tool()
+def marketing_editor_render(plan_path: str = "", output_dir: str = "", stage: str = "draft",
+                            plan_paths: Optional[List[str]] = None) -> dict:
+    """Dựng draft/final cục bộ sau duyệt. Chọn plan_path cho một job HOẶC plan_paths cho batch.
+    Batch dùng cùng engine, duyệt riêng từng plan, lỗi một job không chặn job sau.
+    output_dir bắt buộc; không ghi đè output cũ hay nguồn; không upload/xuất bản lên mạng."""
+    assert_client_licensed()
+    from ags_marketing_editor import render_batch, render_plan
+
+    if not output_dir.strip():
+        raise ValueError("output_dir is required; choose a new local output directory")
+    if plan_paths is not None:
+        if plan_path or not plan_paths:
+            raise ValueError("Provide either plan_path or a nonempty plan_paths batch, not both")
+        return render_batch(plan_paths, output_dir, stage)
+    if not plan_path.strip():
+        raise ValueError("Provide plan_path or a nonempty plan_paths batch")
+    return render_plan(plan_path, output_dir, stage)
+
+
 if __name__ == "__main__":
     mcp.run()

@@ -2,6 +2,23 @@
 
 ## Chưa phát hành
 **Mới**
+- AGS Marketing Editor: skill `skills/ags-marketing-editor/SKILL.md` hướng dẫn agent bóc băng nguồn cục bộ, chọn ý
+  marketing/giáo dục/bán hàng có căn cứ, tự viết plan JSON và xử lý sửa bằng lời thường. Chủ duyệt plan trước nháp và
+  duyệt nháp trước final; thay nguồn/transcript/font/nội dung cần duyệt lại. Không gọi API trả phí, upload hay đăng video.
+  MCP thêm `marketing_editor_inspect`, `marketing_editor_validate`, `marketing_editor_approve`, `marketing_editor_render`
+  dùng chung engine cục bộ; render nhận `plan_path` hoặc batch `plan_paths` với kết quả/lỗi riêng từng job. Mọi tool giữ
+  kiểm tra giấy phép hiện có. Installer tự phát hiện skill, không thêm đường cài riêng. Hướng dẫn sử dụng phân biệt
+  kiểm tra kỹ thuật, duyệt con người và từng host `NOT_CHECKED` nếu chưa chạy thật; cấu hình không chứng minh tương thích.
+- Sửa đích cài Antigravity theo consumer hiện tại: MCP dùng `.gemini/config/mcp_config.json`; skill dùng
+  `.gemini/config/skills` cho App/IDE và `.gemini/antigravity-cli/skills` cho CLI. Giữ cơ chế gộp/backup, không sửa
+  cấu hình cá nhân trong quá trình phát triển. Marketing Editor chuyển compatibility vào metadata để tương thích
+  validator Codex hiện có; `agents/openai.yaml` là metadata tuỳ chọn theo tài liệu Codex, không phải điều kiện nạp skill.
+- Bằng chứng tích hợp 25/10/2026 do parent ghi nhận: marketing editor 10 đạt, core 10 đạt, installer 5 đạt, BA 24 đạt;
+  cổng BA PASS 100 và builder plan đã tạo. MCP thực đã chạy inspect → validate → duyệt plan → draft → duyệt draft →
+  final trên clip AGS cục bộ 6 giây; SHA-256 draft/final giống nhau. Nguồn có phụ đề đốt sẵn, smoke không có lời nói,
+  nên không chứng minh speech transcription, phụ đề mới hay duyệt nội dung. Ba host đầy đủ vẫn NOT_CHECKED/BLOCKED:
+  Antigravity headless bị sandbox từ chối quyền chạy lệnh; Codex gpt-6.1-sol chạm usage limit; Claude API thiếu credit
+  đã biết. Không kết luận cả ba host đã sẵn sàng từ installer hoặc luồng MCP trực tiếp.
 - Phụ đề ngắt theo cụm ý: `ags_common.group_word_lists(..., semantic_chunk=True)` ngắt ở dấu phẩy/chấm phẩy và từ nối
   (nhưng, vì, nên, để, khi, nếu, thì, mà…), gộp lại cụm 1 từ nếu còn vừa giới hạn; pipeline ags-reels bật mặc định cho
   phụ đề .ASS (`semantic_chunk=false` để tắt). `ags_cut_silence.py --insight-pause 0.35`: giữ lặng tới mốc kết câu

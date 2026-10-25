@@ -1,0 +1,107 @@
+{
+  "feature": "ags-marketing-editor",
+  "ba_audit_status": "PASS",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Architecture & Plan Lock",
+      "agents": [
+        "planner",
+        "ags-advisor"
+      ],
+      "skills": [
+        "ags-plan",
+        "ags-advise"
+      ],
+      "tasks": [
+        "Lock scope from docs/ags-marketing-editor/srs/spec.md: 6 BR, 6 error codes",
+        "Confirm 1 screen(s), 5 local CLI/MCP interface(s), 1 user story file(s) before coding"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Frontend UX/UI",
+      "agents": [
+        "ui-ux-designer"
+      ],
+      "skills": [
+        "ags-frontend-design",
+        "ags-ui-ux-pro-max",
+        "ags-ui-styling",
+        "ags-frontend-development",
+        "ags-react-best-practices"
+      ],
+      "tasks": [
+        "Build screen main (docs/ags-marketing-editor/ascii-screen/main.md) with Loading/Empty/Error/Populated states; data-testid: marketing-approval, marketing-draft, marketing-goal, marketing-plan, marketing-status"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Backend API & DB",
+      "agents": [
+        "fullstack-developer"
+      ],
+      "skills": [
+        "ags-backend-development",
+        "ags-databases",
+        "ags-better-auth",
+        "ags-payment-integration",
+        "ags-security"
+      ],
+      "tasks": [
+        "Implement local CLI/MCP interface: Surface: marketing-goal; CLI: inspect; MCP: marketing_editor_inspect; Input: source, transcript_path, model; Output: transcript.json; Persistence: transcript.json; Errors: E-ags-marketing-editor-001",
+        "Implement local CLI/MCP interface: Surface: marketing-plan; CLI: validate; MCP: marketing_editor_validate; Input: plan_path; Output: plan_hash, duration, words, role_durations; Persistence: none (read-only); Errors: E-ags-marketing-editor-001",
+        "Implement local CLI/MCP interface: Surface: marketing-approval; CLI: approve; MCP: marketing_editor_approve; Input: plan_path, stage, reason; Output: approval.json; Persistence: approval.json; Errors: E-ags-marketing-editor-002",
+        "Implement local CLI/MCP interface: Surface: marketing-draft; CLI: render; MCP: marketing_editor_render; Input: plan_path, output_dir, stage; Output: video.mp4, subtitles.srt, report.json; Persistence: report.json; Errors: E-ags-marketing-editor-004",
+        "Implement local CLI/MCP interface: Surface: marketing-status; CLI: validate; MCP: marketing_editor_validate; Input: plan_path; Output: status, error, artifact_paths; Persistence: none (read-only); Errors: E-ags-marketing-editor-001",
+        "Enforce business rules: BR-ags-marketing-editor-001, BR-ags-marketing-editor-002, BR-ags-marketing-editor-003, BR-ags-marketing-editor-004, BR-ags-marketing-editor-005, BR-ags-marketing-editor-006",
+        "Return error codes: E-ags-marketing-editor-001, E-ags-marketing-editor-002, E-ags-marketing-editor-003, E-ags-marketing-editor-004, E-ags-marketing-editor-005, E-ags-marketing-editor-006"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "BDD Verification & Review",
+      "agents": [
+        "tester",
+        "code-reviewer",
+        "code-simplifier"
+      ],
+      "skills": [
+        "ags-test",
+        "ags-web-testing",
+        "ags-code-review",
+        "ags-ship"
+      ],
+      "tasks": [
+        "Automate docs/ags-marketing-editor/userstories/us-001.md: 11 Given/When/Then scenario(s) via E2E",
+        "Review diff against srs/spec.md, api-map.md and the prototype before merge"
+      ]
+    }
+  ],
+  "generated_from": [
+    "docs/ags-marketing-editor/api/api-map.md",
+    "docs/ags-marketing-editor/ascii-screen/_index.md",
+    "docs/ags-marketing-editor/ascii-screen/main.md",
+    "docs/ags-marketing-editor/diagrams/data-model.md",
+    "docs/ags-marketing-editor/diagrams/sequence-flows.md",
+    "docs/ags-marketing-editor/diagrams/state-machine.md",
+    "docs/ags-marketing-editor/html-design/prototype.html",
+    "docs/ags-marketing-editor/implementation-plan.md",
+    "docs/ags-marketing-editor/srs/spec.md",
+    "docs/ags-marketing-editor/srs/user-flow.md",
+    "docs/ags-marketing-editor/userstories/us-001.md"
+  ],
+  "sha256": {
+    "docs/ags-marketing-editor/implementation-plan.md": "72f996ecee4d1ae0c1a32cb76eb828930bc267ed26842d2ee0a92ca1f51ad8d6",
+    "docs/ags-marketing-editor/diagrams/data-model.md": "a6e223e72f5854284ee32c78dc249d1e76d65a4a8a13d9c4193acbcdb30e8d12",
+    "docs/ags-marketing-editor/diagrams/sequence-flows.md": "74c2f55e4bd2599f0d4faba3cbd0d79fc699e4a5e5b88571d48761747470e617",
+    "docs/ags-marketing-editor/diagrams/state-machine.md": "9ad105cff46c74184255c352b539858cc972364f8e814858250760563b6c0c0e",
+    "docs/ags-marketing-editor/srs/spec.md": "74efeaebe75d2149967661cd3254789aee44d57ef1dfa1bc2f53da6d62dcf0ba",
+    "docs/ags-marketing-editor/srs/user-flow.md": "acae017571e975350598fadcc36861edf222164c52a8a15db03a09db443df7d4",
+    "docs/ags-marketing-editor/ascii-screen/_index.md": "a3fc7b315036c187f7a271128cdcb763569dbbcf5d77a8282a00100d3c59ab0a",
+    "docs/ags-marketing-editor/ascii-screen/main.md": "8f3f9b1b221045e448bc376bae8cf44f58408b3ce811b6e8046319f049fb80e2",
+    "docs/ags-marketing-editor/api/api-map.md": "f6b2ffe0a92eca09431919c9127763d2bce48f3749c1c661051349e993a6cb1d",
+    "docs/ags-marketing-editor/html-design/prototype.html": "3aa9923040fb13e43777a4978574b7c9a07f984db9de8ab345d7602e3b6723ee",
+    "docs/ags-marketing-editor/userstories/us-001.md": "5b6a84410558c653f39c6ad4ee48be5a5a57306b12674431083ea2340b563798"
+  }
+}

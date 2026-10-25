@@ -1,7 +1,35 @@
 # 📖 HƯỚNG DẪN SỬ DỤNG — AGS VIDEO EDITING (AGS — Agent Space)
 
-Hướng dẫn dùng bộ 10 skill dựng/edit video của AGS (Agent Space) trên **coding agent chạy cục bộ** (Claude Code, Google Antigravity,
+Hướng dẫn dùng bộ skill dựng/edit video của AGS (Agent Space) trên **coding agent chạy cục bộ** (Claude Code, Google Antigravity,
 OpenAI Codex, Gemini CLI, Cursor), qua **MCP server** (tuỳ chọn), và nói rõ **giao diện web** (claude.ai, chatgpt.com) làm được/không làm được gì.
+
+## Dựng marketing từ nguồn có thật — AGS Marketing Editor
+
+Nói với trợ lý: **“Từ video tư vấn ở [đường dẫn trên máy], làm clip giải đáp vì sao dịch vụ đắt cho chủ spa. Giữ giọng thật, chữ xanh, cuối mời nhắn tin.”**
+Nhánh `/ags-marketing-editor` dành cho giáo dục khách hàng, giải đáp phản đối, demo, case study có nguồn và lời chào bán thật; không phải dựng giải trí hoặc hứa viral.
+
+1. **Trợ lý tự đọc/bóc băng nguồn cục bộ**, chọn ý theo mục tiêu và tự viết kế hoạch kỹ thuật. Anh/chị không phải viết JSON hay tìm mốc giây. Chỉ hỏi lại thông tin còn thiếu. Nguồn không có lời được ghi nhận rõ, không tạo phụ đề giả.
+2. **Xem kế hoạch bằng lời thường:** câu nào được giữ, thứ tự, bằng chứng nào xuất hiện lúc nào, câu mở/kết, font/màu, thời lượng và âm thanh. Minh hoạ/stock/AI không được tính là bằng chứng; giá, kết quả, lời chứng thực và hạn chót không tự bịa.
+3. **Duyệt kế hoạch để dựng nháp.** Sau đó trợ lý gửi video, phụ đề, ảnh lưới và báo cáo. Anh/chị xem/nghe bản nháp để kiểm nghĩa, tiếng, chữ Việt, khung mặt và bằng chứng; ảnh lưới không thay việc nghe/xem video.
+4. **Duyệt đúng bản nháp mới xuất final.** Hai lần duyệt là riêng biệt. Đổi nguồn, phụ đề, font/màu, câu mở hoặc lời mời đều cần duyệt kế hoạch và nháp mới. Bản ghi duyệt chỉ ghi nhận lời đồng ý cục bộ, không xác thực danh tính.
+5. **Sửa bằng lời thường:** “đưa demo lên trước”, “bỏ đoạn lan man”, “chữ xanh hơn”. Trợ lý trình bày thay đổi trước; yêu cầu chưa rõ thì hỏi lại. Dựng hàng loạt vẫn duyệt từng clip; một clip lỗi không chặn kết quả clip khác.
+
+Chỉ dùng file trên máy và bản ghi âm có thật, không gọi dịch vụ trả phí hay upload/đăng video. Whisper cần model có sẵn để bóc băng offline; thiếu model thì trợ lý báo trước khi xin phép tải. File nguồn không bị sửa; thư mục stage đã có không bị ghi đè, lần dựng lại dùng đích mới.
+
+MCP cục bộ cung cấp `marketing_editor_inspect`, `marketing_editor_validate`, `marketing_editor_approve`, `marketing_editor_render`; render nhận một `plan_path` hoặc danh sách `plan_paths` cho batch. Installer hiện tại tự phát hiện skill mới, không cần nhánh cài riêng.
+
+**Giới hạn kiểm chứng:** báo cáo kỹ thuật không thay chủ duyệt nội dung/hình/tiếng. Antigravity, Codex và Claude Code chỉ được xác nhận sau từng lần chạy thực độc lập; có skill trong cấu hình không có nghĩa cả ba đã được kiểm chứng. Host hoặc review chưa chạy phải ghi `NOT_CHECKED`.
+
+**Kết quả tích hợp 25/10/2026 (do người phụ trách tích hợp ghi nhận):** marketing editor 10 kiểm thử đạt, core 10 đạt,
+installer 5 đạt, BA 24 đạt; cổng BA đạt 100 và đã tạo builder plan. Luồng MCP thực `inspect → validate → duyệt plan →
+draft → duyệt draft → final` đã chạy trên clip AGS cục bộ 6 giây; SHA-256 của MP4 draft và final giống nhau.
+Nguồn này **đã có phụ đề đốt sẵn** và lần smoke không có lời nói: không dùng kết quả đó để chứng minh nhận dạng lời,
+độ đúng của phụ đề mới, chất lượng giọng hoặc duyệt nội dung bằng mắt/tai.
+
+**Chưa sẵn sàng được xác nhận trên cả ba host:** Antigravity headless đã thử nhưng sandbox từ chối quyền chạy lệnh;
+Codex đã thử gpt-6.1-sol nhưng chạm giới hạn sử dụng; Claude Code có lỗi API thiếu credit đã biết. Toàn bộ workflow
+trên từng host vẫn là `NOT_CHECKED/BLOCKED`, không phải PASS. Luồng MCP trực tiếp chạy được không thay cho ba lần
+chạy đầy đủ độc lập qua các host.
 
 ## Bảng chọn món — Anh/chị muốn gì → nói câu nào → ra gì
 Chép câu mẫu vào ô chat của trợ lý (Claude Code, Codex, Antigravity, Cursor), sửa chữ trong ngoặc cho đúng việc của mình.
@@ -168,6 +196,9 @@ Quy tắc chung cho mọi agent nằm ở [`AGENTS.md`](AGENTS.md). Model Whispe
   (`~/.gemini/config/skills/` cho IDE/2.0, `~/.gemini/antigravity-cli/skills/` cho CLI).
 - MCP: Antigravity CLI `agy mcp add ags <python-venv> <ags_mcp_server.py>` hoặc `~/.gemini/config/mcp_config.json` (toàn máy) /
   `.agents/mcp_config.json` (theo workspace) — `--print-mcp` in đủ lệnh với đường dẫn tuyệt đối.
+- `--install-all-clients --targets antigravity` gộp MCP vào `~/.gemini/config/mcp_config.json`, chép skill vào cả
+  `~/.gemini/config/skills/` (App/IDE) và `~/.gemini/antigravity-cli/skills/` (CLI). Không cần tự nhân bản skill.
+  Các vị trí skill theo [tài liệu Antigravity](https://antigravity.google/docs/skills); đăng ký/cài đúng vị trí vẫn chưa là bằng chứng chạy trọn workflow.
 
 ### 4. Gemini CLI
 - Chạy `python scripts/ags_setup.py` trước, rồi `gemini extensions link <thư mục skill>` — nạp `GEMINI.md` (nhập `AGENTS.md`) và MCP

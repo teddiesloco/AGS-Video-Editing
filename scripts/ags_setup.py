@@ -340,7 +340,7 @@ def install_target(target, home, servers, skills):
     touched = []
     backups = home / ".ags" / "backup" / target
     if target == "antigravity":
-        config = home / ".gemini" / "antigravity" / "mcp_config.json"
+        config = home / ".gemini" / "config" / "mcp_config.json"
         touched.append((config, merge_json_servers(config, servers)))
         manifest = json.loads((ROOT / "gemini-extension.json").read_text(encoding="utf-8"))
         manifest["mcpServers"] = {name: {**entry, "timeout": 1800000} for name, entry in servers.items()}
@@ -349,7 +349,7 @@ def install_target(target, home, servers, skills):
                  "GEMINI.md": (ROOT / "GEMINI.md").read_bytes(),
                  "AGENTS.md": with_note((ROOT / "AGENTS.md").read_text(encoding="utf-8"), ROOT).encode("utf-8")}
         touched.append((extension, sync_dir(extension, files, backups / extension.name)))
-        skill_root = home / ".gemini" / "antigravity" / "skills"
+        skill_root = home / ".gemini" / "config" / "skills"
     elif target == "claude":
         config = home / ".claude.json"
         touched.append((config, merge_json_servers(config, {n: {"type": "stdio", **e} for n, e in servers.items()})))
@@ -372,8 +372,14 @@ def install_target(target, home, servers, skills):
         source = (ROOT / ".cursor" / "rules" / "ags-video-editing.mdc").read_text(encoding="utf-8")
         touched.append((rule, write_atomic(rule, with_note(source, ROOT))))
         skill_root = None
-    for name, files in (skills.items() if skill_root else ()):
-        touched.append((skill_root / name, sync_dir(skill_root / name, files, backups / name)))
+    skill_roots = [skill_root] if skill_root else []
+    if target == "antigravity":
+        # App/IDE and CLI have distinct documented global discovery roots.
+        skill_roots.append(home / ".gemini" / "antigravity-cli" / "skills")
+    for root in skill_roots:
+        for name, files in skills.items():
+            backup = backups / ("cli" if root != skill_root else "") / name
+            touched.append((root / name, sync_dir(root / name, files, backup)))
     return touched
 
 
