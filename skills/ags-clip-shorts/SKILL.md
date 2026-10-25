@@ -43,7 +43,7 @@ Mỗi đoạn → `shorts/<name>.mp4` (mặc định `<tên>_short_NN.mp4`), cu�
 
 ## Bước 4 — Kiểm định từng short (bắt buộc)
 ```bash
-python harness/ags_anti_slop_guard.py shorts/<name>.mp4 --contact-sheet shorts/<name>_sheet.jpg
+python harness/ags_anti_slop_guard.py shorts/<name>.mp4 --contact-sheet shorts/<name>_sheet.jpg --debug-zones
 ```
 Ô `#0 (khung 0)` phải thấy hook; mặt người nói trong khung; chữ trong khung hồng. Exit `0` đạt · `2` cảnh báo · `1` lỗi.
 Vòng soát: `harness/QUY-TRINH-KIEM-DINH.md`. Qua MCP: `clip_shorts_transcript` rồi `clip_shorts_cut`.

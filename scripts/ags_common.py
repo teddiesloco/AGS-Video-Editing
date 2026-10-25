@@ -34,13 +34,16 @@ LOUDNORM = "loudnorm=I=-14:LRA=11:TP=-2.0"
 #   - TikTok TopView, giai đoạn in-feed, mẫu 720x1280: 160 px trên, 440 px dưới, 80 px mỗi bên có thể bị cắt,
 #     cột nút bên phải thêm 120 px (cao 720 px tính từ đáy).
 #     https://ads.tiktok.com/help/article/tiktok-reservation-topview (file "TopView safe zones .zip")
-# => trên 288/1920 = 15%, dưới 35%, trái 80/720 = 11.1%, phải (80 + 120)/720 = 27.8%.
-SAFE_ZONE_9X16 = {"left": 0.111, "top": 0.15, "right": 0.278, "bottom": 0.35}
+# => trên 288/1920 = 15%, dưới 35%. Hai bên lấy ĐỐI XỨNG 200/1080 = 18,5% (24/10/2026): lề trái 11,1% + phải 27,8%
+# theo đúng cột nút TikTok làm tâm hộp chữ lệch về x ≈ 450/1080 nên người xem thấy chữ lệch trái; 200 px mỗi bên vẫn
+# phủ cột nút phải của Reels/Shorts/TikTok in-feed (mẫu chung đối chiếu Meta, TikTok, Shorts) và chữ căn giữa x = 540.
+SAFE_ZONE_9X16 = {"left": 0.185, "top": 0.15, "right": 0.185, "bottom": 0.35}
 # Video không dọc 9:16 (ngang, vuông): chừa lề đều mỗi cạnh.
 SAFE_MARGIN_OTHER = 0.08
 
 # Font có đủ dấu tiếng Việt, theo thứ tự ưu tiên (tên file trên macOS, Windows, Linux).
 # Pillow tự tìm tên file trong thư mục font hệ thống của từng hệ điều hành.
+_BUNDLED_FONTS = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 FONT_FILES = {
     "bold": ["Montserrat-Bold.ttf", "Arial Bold.ttf", "arialbd.ttf",
              "DejaVuSans-Bold.ttf", "NotoSans-Bold.ttf", "LiberationSans-Bold.ttf"],
@@ -49,6 +52,9 @@ FONT_FILES = {
     "serif": ["Georgia.ttf", "georgia.ttf",
               "DejaVuSerif.ttf", "NotoSerif-Regular.ttf", "LiberationSerif-Regular.ttf"],
 }
+# Phụ đề kênh (bt_vi): Bricolage Grotesque, dự phòng Be Vietnam Pro (assets/fonts hoặc font máy), cuối cùng là font "bold".
+FONT_FILES["display"] = [str(_BUNDLED_FONTS / "BricolageGrotesque-Bold.ttf"), "BricolageGrotesque-Bold.ttf",
+                         str(_BUNDLED_FONTS / "BeVietnamPro-Bold.ttf"), "BeVietnamPro-Bold.ttf", *FONT_FILES["bold"]]
 
 FILLER_PUNCT = re.compile(r"[^\w]+")
 STANDARD_FPS = [Fraction(24000, 1001), Fraction(24), Fraction(25), Fraction(30000, 1001), Fraction(30),
@@ -242,22 +248,52 @@ def _drop_whisper_junk(words):
     return result
 
 
-def group_word_lists(words, max_chars=32, max_seconds=3.0, clean=True):
+VI_SEMANTIC_BREAK_WORDS = frozenset({
+    "nhưng", "vì", "nên", "để", "khi", "nếu", "thì", "mà", "hoặc", "bởi", "do", "tuy",
+})
+
+
+def group_word_lists(words, max_chars=32, max_seconds=3.0, clean=True, semantic_chunk=False):
     """Gom từ [(start, end, word)] thành các cụm ngắn (mỗi cụm là list từ), ngắt ở dấu câu.
-    clean=False giữ nguyên từng từ (lời đọc đã biết trước: không được lọc/gộp từ nào)."""
+    clean=False giữ nguyên từng từ (lời đọc đã biết trước: không được lọc/gộp từ nào).
+    semantic_chunk=True ưu tiên ngắt theo Cụm Tư Duy (dấu phẩy/chấm phẩy và từ nối chuyển ý tiếng Việt)."""
     groups, current = [], []
+    min_semantic_chars = max(10, int(max_chars * 0.42))
     for word in (_drop_whisper_junk(words) if clean else words):
         if current:
-            length = len(" ".join(w[2] for w in current)) + 1 + len(word[2])
-            if length > max_chars or word[1] - current[0][0] > max_seconds:
+            cur_text = " ".join(w[2] for w in current)
+            length = len(cur_text) + 1 + len(word[2])
+            semantic_break = (
+                semantic_chunk
+                and len(current) >= 2
+                and len(cur_text) >= min_semantic_chars
+                and normalize_word(word[2]) in VI_SEMANTIC_BREAK_WORDS
+            )
+            if length > max_chars or word[1] - current[0][0] > max_seconds or semantic_break:
                 groups.append(current)
                 current = []
         current.append(word)
         if word[2][-1] in ".!?…":
             groups.append(current)
             current = []
+        elif semantic_chunk and word[2][-1] in ",;:" and len(current) >= 2:
+            if len(" ".join(w[2] for w in current)) >= min_semantic_chars:
+                groups.append(current)
+                current = []
     if current:
         groups.append(current)
+    if semantic_chunk:
+        # Không để cụm 1 từ đứng lẻ sau một lần ngắt ngữ nghĩa: gộp lại vào cụm trước nếu vẫn trong giới hạn.
+        merged = []
+        for g in groups:
+            prev = merged[-1] if merged else None
+            if (prev and len(g) == 1 and prev[-1][2][-1] not in ".!?…"
+                    and len(" ".join(w[2] for w in prev + g)) <= max_chars
+                    and g[-1][1] - prev[0][0] <= max_seconds):
+                prev.extend(g)
+            else:
+                merged.append(g)
+        groups = merged
     return groups
 
 

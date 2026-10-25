@@ -29,7 +29,7 @@ lo cài môi trường). Nếu người dùng chưa có công cụ đó, nói r�
    - Video dài → short: `python scripts/ags_clip_shorts.py transcript "dai.mp4"` rồi `... cut "dai.mp4" --transcript dai_transcript.json --ranges ranges.json`
    - Giọng đọc tiếng Việt cục bộ: `python scripts/ags_tts.py synthesize --engine vieneu --text-file loi.txt --out loi.wav`
    - Hiệu ứng CC0 theo mốc: `python scripts/ags_sfx.py mix "video.mp4" --events events.json --out "video_sfx.mp4"`
-   - Kiểm định: `python harness/ags_anti_slop_guard.py "out.mp4" --contact-sheet "out_sheet.jpg"` (exit 0 đạt · 2 cảnh báo · 1 lỗi)
+   - Kiểm định: `python harness/ags_anti_slop_guard.py "out.mp4" --contact-sheet "out_sheet.jpg" --debug-zones` (exit 0 đạt · 2 cảnh báo · 1 lỗi)
 4. Viết kịch bản, hook, văn bản lồng tiếng tiếng Việt đủ dấu; không bịa số liệu BĐS (giá, diện tích, pháp lý) — thiếu thì hỏi.
 
 ## Việc bạn KHÔNG làm

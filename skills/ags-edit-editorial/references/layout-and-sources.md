@@ -42,9 +42,9 @@ Chữ hợp lệ khi **ngoài (1)**, **ngoài (2)**, và ưu tiên nằm trong *
 
 ## 4. Code hiện làm gì (phạm vi thật) và giới hạn
 
-- `safe_box` / `SAFE_ZONE_9X16` trong `scripts/ags_common.py` dùng **một hộp an toàn duy nhất**: lề lớn nhất mỗi cạnh lấy từ ba
-  tài liệu **quảng cáo dọc** (Meta Reels ads, YouTube vertical video ads, TikTok TopView in-feed). Hiện: trái 11,1%, trên 15%,
-  phải 27,8%, dưới 35% khung; video không dọc dùng lề đều 8%.
+- `safe_box` / `SAFE_ZONE_9X16` trong `scripts/ags_common.py` dùng **một hộp an toàn duy nhất**: trên/dưới lấy lề lớn nhất từ ba
+  tài liệu **quảng cáo dọc** (Meta Reels ads, YouTube vertical video ads, TikTok TopView in-feed); hai bên đối xứng 18,5%
+  (200 px ở 1080) để chữ căn giữa x = 540. Hiện: trái 18,5%, trên 15%, phải 18,5%, dưới 35% khung; video không dọc dùng lề đều 8%.
 - **Giới hạn, không phải luật cho nội dung organic:** hộp này là hợp (union) chặt của các mẫu ads. Giao diện của bài organic
   chưa được đo ở đây và có thể khác. Đây là lựa chọn bảo thủ để chữ không bị che trên cả ba nền tảng, không phải khẳng định
   "vùng chuẩn".

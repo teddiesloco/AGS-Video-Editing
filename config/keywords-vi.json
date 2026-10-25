@@ -1,0 +1,37 @@
+{
+  "_ghi_chu": "Ngữ pháp 3 màu (BR-005). Người bán sửa được: thêm/bớt cụm vào đúng nhãn. Mỗi cụm viết thường, cách nhau bằng dấu cách. ags_vi_script.pick_keywords ưu tiên (1) số/tiền/%/thời gian, (2) cụm trong file này, (3) danh từ riêng; tối đa 1 từ khoá trong mỗi cụm phụ đề 2–4 từ.",
+  "colors": {
+    "tien": "#A8FF3E",
+    "nhan": "#FFD166",
+    "canh-bao": "#FF5A5F"
+  },
+  "labels": {
+    "tien": "tiền, lợi nhuận, thắng, kết quả tốt",
+    "nhan": "nhấn mạnh, số, thời gian",
+    "canh-bao": "cảnh báo, sai lầm, mất mát"
+  },
+  "keywords": {
+    "tien": [
+      "doanh thu", "doanh số", "lợi nhuận", "dòng tiền", "tiền mặt", "tiền lời", "lãi", "có lãi", "tăng trưởng",
+      "thu nhập", "giàu", "thắng", "chiến thắng", "bán chạy", "chốt đơn", "khách quay lại", "khách trung thành",
+      "tài sản", "giá trị", "tăng giá", "tiết kiệm", "đầu tư", "hiệu quả", "thành công", "tự do tài chính"
+    ],
+    "nhan": [
+      "bí mật", "sự thật", "nguyên tắc", "quan trọng nhất", "duy nhất", "cốt lõi", "kỷ luật", "tập trung",
+      "đơn giản", "ngay lập tức", "mỗi ngày", "mỗi tuần", "tốc độ", "niềm tin", "thói quen", "hệ thống", "chiến lược",
+      "khác biệt", "lần đầu", "cuối cùng", "sức khoẻ", "sức khỏe"
+    ],
+    "canh-bao": [
+      "sai lầm", "mất khách", "mất tiền", "mất trắng", "thua lỗ", "lỗ", "phá sản", "đóng cửa", "cạn tiền", "cạn",
+      "nợ", "nợ nần", "rủi ro", "nguy hiểm", "cảnh báo", "cẩn thận", "đừng", "bẫy", "thất bại", "kiệt sức",
+      "lừa đảo", "chết"
+    ]
+  },
+  "money_units": ["k", "tr", "triệu", "tỷ", "tỉ", "nghìn", "ngàn", "đồng", "đ", "vnd", "usd", "đô"],
+  "time_units": ["giây", "phút", "giờ", "ngày", "tuần", "tháng", "quý", "năm", "đời"],
+  "function_words": [
+    "và", "là", "của", "thì", "mà", "nhưng", "với", "cho", "để", "những", "các", "một", "này", "kia", "đó", "ấy",
+    "khi", "nếu", "vì", "nên", "rồi", "cũng", "đã", "đang", "sẽ", "có", "không", "được", "bị", "ở", "trong", "trên",
+    "dưới", "ra", "vào", "lại", "nữa", "chỉ", "hãy", "anh", "chị", "em", "bạn", "tôi", "mình", "ta", "chúng"
+  ]
+}

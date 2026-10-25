@@ -1,8 +1,29 @@
 # 🎬 AGS Video Editing — bộ skill edit video tự động của AGS (Agent Space)
 
-9 skill edit video chạy bằng Python + FFmpeg **trên máy của bạn** (macOS, Linux, Windows): cắt lặng, phụ đề karaoke, reframe 9:16,
-cắt short, video BĐS, giọng đọc tiếng Việt cục bộ + hiệu ứng âm thanh CC0. Dùng từ Claude Code, Google Antigravity, Codex,
-Gemini CLI, Cursor (agent chạy lệnh thay bạn). **claude.ai và ChatGPT web không render được** — xem bảng bên dưới.
+10 skill dựng/edit video chạy bằng Python + FFmpeg **trên máy của bạn** (macOS, Linux, Windows). Mới: **AGS Video Studio** —
+nói 1 câu bằng lời thường, trả lời tối đa 3 câu hỏi ngắn, xem chi phí trước, gõ "chạy" là có video 9:16 kèm ảnh lưới để duyệt.
+Dùng từ Claude Code, Google Antigravity, Codex, Gemini CLI, Cursor (agent chạy lệnh thay bạn). **claude.ai và ChatGPT web
+không dựng video được** — xem bảng bên dưới.
+
+## Bảng chọn món — Anh/chị muốn gì → nói câu nào → ra gì
+| Anh/chị muốn gì | Nói câu nào (sửa chữ trong ngoặc) | Ra gì |
+|---|---|---|
+| Bất động sản — giới thiệu lô đất, căn hộ | "Làm video 45 giây giới thiệu (lô đất 5x20 ở Long An) từ ảnh em gửi, giọng miễn phí." | Video dọc có ảnh/clip của anh/chị, khung lô đất, chữ thông tin, giọng đọc, phụ đề |
+| Quán ăn, đồ uống (F&B) | "Làm video 30 giây giới thiệu (món bún bò mới) của quán, giọng Google AI." | Video dọc ảnh món ăn có chuyển động, câu mở hút mắt, lời mời ghé quán |
+| Giáo dục, khoá học | "Làm video 45 giây giải thích (vì sao học tiếng Anh mãi chưa nói được)." | Video giảng giải ngắn, mỗi ý một hình, từ khoá tô màu |
+| Y tế – làm đẹp (phòng khám, spa) | "Làm video 30 giây chia sẻ (3 sai lầm khi chăm da mùa nắng) cho spa." | Video lời khuyên, giọng ấm, phụ đề rõ, không hứa hiệu quả chữa trị |
+| Bán hàng online (thương mại điện tử) | "Làm video 30 giây giới thiệu (bình giữ nhiệt mới), nhấn giá và ưu đãi em đưa." | Video sản phẩm, giá/ưu đãi tô màu nổi, lời mời đặt hàng nhẹ nhàng |
+| Tư duy kinh doanh — "30 năm trong 60 giây" | "Làm video 30 năm tư duy kinh doanh trong 60 giây về (dòng tiền), kiểu Business Thinking." | 60 giây: câu mở ≤ 8 chữ + 5–7 nguyên tắc ngắn + câu kết, Việt hoá 100% |
+| Giải thích kiểu Jetlag, Việt hoá | "Làm video kiểu Jetlag Việt hoá giải thích (vì sao cà phê Việt xuất khẩu nhiều mà giá rẻ)." | 45–75 giây kể chuyện – giải thích có con số, ví dụ và tiền tệ Việt Nam |
+| Du lịch, điểm đến | "Làm video 45 giây kể chuyện (vì sao Phú Quý ngày càng đông khách)." | Video kể chuyện điểm đến, có bản đồ/con số anh/chị cung cấp |
+| Dịch vụ cho doanh nghiệp (B2B) | "Làm video 45 giây giải thích (quy trình 3 bước làm kế toán thuê) bằng sơ đồ 3D." | Video sơ đồ khối 3D: đầu vào → xử lý → kết quả |
+
+**Nói xong thì sao?** Trợ lý hỏi lại tối đa 3 câu, chỉ hỏi câu anh/chị chưa nói: (1) Ngành/chủ đề gì? (2) Phong cách mẫu
+nào? (3) Giọng đọc miễn phí trên máy hay giọng Google AI (Gemini)? → viết lời đọc tiếng Việt tự nhiên và tự kiểm → **báo chi
+phí bằng tiền Việt** (giọng miễn phí + hình có sẵn = 0 đồng) → **chờ anh/chị gõ "chạy"** → gửi video + ảnh lưới 12 khung để
+duyệt → sửa bằng lời thường: *"đổi sub sang vàng"*, *"chữ to hơn"*, *"đọc chậm lại"*, *"đổi cảnh 3"*, *"làm 3 bản thử câu mở
+đầu"*. "Business Thinking", "Jetlag" chỉ là tên thể loại: học cách kể, không dùng hình/tiếng/chữ của các kênh đó. Bộ này
+không hứa thu nhập hay lượt xem, và không tự bịa số liệu kết quả của anh/chị. Chi tiết: `skills/ags-studio/SKILL.md`.
 
 > 📘 **Hướng dẫn chi tiết:** [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md) · **Quy tắc cho agent:** [AGENTS.md](AGENTS.md) ·
 > **Thay đổi:** [CHANGELOG.md](CHANGELOG.md)
@@ -33,9 +54,10 @@ Tự cài bằng tay (cùng kết quả): macOS/Linux `bash CAI-DAT-MAC.sh` · W
 
 ---
 
-## 🚀 9 Skill
+## 🚀 10 Skill
 | Skill | Script | Làm gì |
 |---|---|---|
+| `/ags-studio` | `scripts/ags_studio.py`, `scripts/ags_vi_script.py` | AGS Video Studio: 1 câu lời thường → hỏi ngược 3 câu → kịch bản Việt hoá tự kiểm → báo chi phí VND, chờ "chạy" → video 9:16 (ảnh AI + chuyển động, phụ đề tô 3 màu từ khoá trong vùng an toàn, -14 LUFS) + ảnh lưới → sửa bằng lời, 3 bản thử câu mở đầu |
 | `/ags-edit-az` | `scripts/ags_cut_silence.py` | Bỏ khoảng lặng (đo độ to) và từ đệm "ờ, à, ừm", cắt chính xác từng khung, crossfade tiếng, -14 LUFS |
 | `/ags-edit-hook` | `scripts/ags_text_behind_person.py` | Tách người bằng rembg, câu hook chìm sau lưng người nói, hiện ngay khung 0 |
 | `/ags-edit-editorial` | `scripts/ags_editorial_sub.py` | Phụ đề clean (Sans đậm, từ khoá vàng cát), tạp chí hoặc karaoke (tô màu từng từ, từ khoá), trong vùng an toàn 9:16, -14 LUFS |
@@ -57,7 +79,7 @@ python harness/ags_anti_slop_guard.py "video_output.mp4" --contact-sheet "video_
 - **Cảnh báo (exit `2`):** không có tiếng; lệch hình-tiếng > 0.25 s; ngoài -14 ± 2 LUFS; true peak > -1 dBTP; đoạn đen ≥ 0.5 s;
   đứng hình ≥ 5 s; khoảng lặng (dưới -50 dBFS) ≥ 2 s.
 - **Đạt (exit `0`):** không lỗi, không cảnh báo.
-- `--contact-sheet` (+ `--frames N`) xuất ảnh lưới khung hình (khung 0 + rải đều, có khung hồng vùng an toàn) để soát bằng
+- `--contact-sheet` (+ `--frames N`, `--debug-zones` để vẽ khung hồng vùng an toàn) xuất ảnh lưới khung hình (khung 0 + rải đều) để soát bằng
   mắt hoặc model thị giác — quy trình: [harness/QUY-TRINH-KIEM-DINH.md](harness/QUY-TRINH-KIEM-DINH.md).
 
 ---
@@ -66,7 +88,7 @@ python harness/ags_anti_slop_guard.py "video_output.mp4" --contact-sheet "video_
 Dùng Python của venv trong thư mục skill (macOS/Linux `venv/bin/python`, Windows `venv\Scripts\python.exe`), cwd = thư mục skill:
 ```bash
 python scripts/ags_cut_silence.py "video_quay_tho.mp4"
-python scripts/ags_text_behind_person.py "video.mp4" --text "90 NGÀY KIẾM 1 TỶ"
+python scripts/ags_text_behind_person.py "video.mp4" --text "3 SAI LẦM KHI MUA ĐẤT"
 python scripts/ags_editorial_sub.py "video.mp4" --style karaoke --keywords "bất động sản"
 python scripts/ags_voice_to_kinetic.py "audio.mp3"
 python scripts/ags_voice_to_doodle.py "audio.mp3"
@@ -75,21 +97,26 @@ python scripts/ags_clip_shorts.py transcript "livestream.mp4"
 python scripts/ags_clip_shorts.py cut "livestream.mp4" --transcript livestream_transcript.json --ranges ranges.json
 python scripts/ags_bds_cli.py render --clips clip1.mp4 clip2.mp4 anh.jpg --seconds 4 --transition dissolve --zoom subtle --voice loi.wav --out video.mp4
 python scripts/ags_tts.py synthesize --engine vieneu --text-file loi.txt --out loi.wav
+python scripts/ags_studio.py intake --request "Làm video 30 năm tư duy kinh doanh trong 60 giây về dòng tiền" --json
+python scripts/ags_vi_script.py validate --script-file kich-ban.txt --duration 60 --json
 python scripts/ags_sfx.py mix "video.mp4" --events events.json --out "video_sfx.mp4"
 ```
 
 ## 🤖 Dùng với coding agent
 | Agent | File trong thư mục skill |
 |---|---|
-| Claude Code | `SKILL.md` (skill gốc, tự kiểm tra/cài môi trường) + `skills/` (9 skill con) |
-| Codex, Google Antigravity, Cursor | [`AGENTS.md`](AGENTS.md) (quy tắc chung); Cursor còn có `.cursor/rules/ags-video-editing.mdc` |
+| Claude Code | `SKILL.md` (skill gốc, tự kiểm tra/cài môi trường) + `skills/` (10 skill con, gồm `ags-studio`) |
+| Codex, Google Antigravity, Cursor | [`AGENTS.md`](AGENTS.md) (quy tắc chung) + `skills/ags-studio/SKILL.md`; Cursor còn có `.cursor/rules/ags-video-editing.mdc` |
 | Gemini CLI | `gemini-extension.json` + `GEMINI.md` (`gemini extensions link .`) |
 | claude.ai (web, chỉ lập kế hoạch) | `ags-video-editing-web.zip` do `python scripts/ags_build_skill_zips.py` dựng cùng bản cài đặt |
 
 ## 🔌 MCP Server (tuỳ chọn)
-`mcp/ags_mcp_server.py` (stdio) mở 15 tool: `cut_silence`, `text_behind_person`, `editorial_sub`, `voice_to_kinetic`,
-`voice_to_doodle`, `reframe`, `clip_shorts_transcript`, `clip_shorts_cut`, `bds_draft`, `bds_render`, `anti_slop_guard`,
-`tts_voices`, `tts_synthesize`, `sfx_list`, `sfx_mix`. Mỗi tool trả về `output`, `exit_code`, `stderr_tail`, `stdout_tail`.
+`mcp/ags_mcp_server.py` (stdio) mở 27 tool: `cut_silence`, `text_behind_person`, `editorial_sub`, `voice_to_kinetic`,
+`voice_to_doodle`, `reframe`, `clip_shorts_transcript`, `clip_shorts_cut`, `bds_draft`, `bds_render`, `blender_3d_render`,
+`anti_slop_guard`, `tts_voices`, `tts_synthesize`, `sfx_list`, `sfx_mix` (trả `output`, `exit_code`, `stderr_tail`,
+`stdout_tail`) và 11 tool AGS Video Studio `ags_studio_menu`, `ags_studio_intake`, `ags_studio_quote`, `ags_studio_run`,
+`ags_studio_revise`, `ags_studio_variants`, `ags_studio_proof`, `ags_studio_validate_script`, `ags_studio_hook`,
+`ags_studio_claims`, `ags_studio_profile` (trả `exit_code`, `result` là JSON của lệnh, `stderr_tail`, `stdout_tail`).
 Installer sinh `.mcp.json` / `.cursor/mcp.json` với đường dẫn tuyệt đối (không dùng biến `${...}`); cấu hình cho client khác:
 `python scripts/ags_setup.py --print-mcp` — xem [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md#phần-3-mcp-server).
 

@@ -29,7 +29,7 @@ trong thư mục skill đã cài, bằng Python của venv trong thư mục đó
    events.json: [{"file":"click_001.ogg","time":2.0,"gain":0.3}]  (time ≥ 0 và < thời lượng video; gain 0–1)
 
 Kiểm định trước khi đăng (người dùng chạy):
-python harness/ags_anti_slop_guard.py "output.mp4" --contact-sheet "output_sheet.jpg"
+python harness/ags_anti_slop_guard.py "output.mp4" --contact-sheet "output_sheet.jpg" --debug-zones
 Exit 0 = đạt, 2 = có cảnh báo cần xem lại, 1 = lỗi nghiêm trọng. Nhờ người dùng gửi ảnh contact sheet để bạn soát — chỉ nói
 điều nhìn thấy: chữ nằm trong khung hồng, đủ dấu tiếng Việt, khung 0 có hook, mặt người nói trong khung.
 Không bịa số liệu BĐS (giá, diện tích, pháp lý); thiếu thì hỏi lại.

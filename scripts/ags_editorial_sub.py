@@ -29,9 +29,15 @@ STYLES = {
                   "outline_div": 20, "shadow_div": 0, "blur": 0, "highlight": "#FFD60A"},
     "karaoke": {"font": "bold", "size": 0.065, "max_chars": 24, "max_seconds": 2.5, "bold": -1, "spacing": 0,
                 "outline_div": 12, "shadow_div": 0, "blur": 0, "highlight": "#FFD60A"},
+    # Kênh "N năm kinh nghiệm trong 60 giây": cụm 2–4 từ, chữ trắng viền đen dày, cỡ 6,7% cạnh ngắn (72 px ở 1080),
+    # chỉ hạ tới 5,8% (63 px) khi cụm không vừa 2 dòng.
+    "bt_vi": {"font": "display", "size": 0.067, "min_size": 0.058, "max_chars": 30, "max_seconds": 2.0, "max_words": 4,
+              "bold": -1, "spacing": 0, "outline_div": 12, "shadow_div": 0, "blur": 0, "highlight": "#FFD166"},
 }
+BT_VI_SIZE_RANGE = (0.058, 0.072)  # FR-012: cỡ chữ bt_vi 5,8–7,2% cạnh ngắn (mặc định 6,7%)
 DEFAULT_STYLE = "clean"
-HOOK_SIZE = 0.075  # cỡ chữ hook (tỉ lệ cạnh ngắn)
+HOOK_SIZE = 0.078      # cỡ chữ hook (tỉ lệ cạnh ngắn): 84 px ở 1080
+HOOK_MIN_SIZE = 0.0667  # hook chỉ hạ tới 72 px khi không vừa 3 dòng
 FIT_MARGIN = 1.1       # dự phòng chênh số đo Pillow so với libass (viền chữ, kerning)
 MIN_FONT_SCALE = 0.75  # hạ cỡ chữ tối đa 25% khi chữ không vừa số dòng cho phép
 MAX_LINES = {"Caption": 2, "Hook": 3}
@@ -94,9 +100,9 @@ def wrap_tokens(texts, font, spacing, limit):
     return lines
 
 
-def fit_layout(texts, font_key, base_size, spacing, limit, max_lines):
-    """(cỡ chữ, font, dòng): giữ `base_size`, chỉ hạ dần (tới MIN_FONT_SCALE) khi vượt `max_lines` dòng."""
-    floor = max(1, round(base_size * MIN_FONT_SCALE))
+def fit_layout(texts, font_key, base_size, spacing, limit, max_lines, floor=None):
+    """(cỡ chữ, font, dòng): giữ `base_size`, chỉ hạ dần (tới `floor`, mặc định MIN_FONT_SCALE) khi vượt `max_lines` dòng."""
+    floor = max(1, floor or round(base_size * MIN_FONT_SCALE))
     size = base_size
     while True:
         font = load_font(font_key, size)
@@ -106,27 +112,47 @@ def fit_layout(texts, font_key, base_size, spacing, limit, max_lines):
         size = max(floor, size - max(1, base_size // 20))
 
 
-def caption_markup(texts, lines, scales, highlighted=(), color=""):
-    """Văn bản ASS: ngắt dòng bằng \\N; từ tô màu giữ nguyên; từ dài hơn cả dòng (scale < 100) thu hẹp riêng."""
+def split_word_groups(groups, max_words):
+    """Chia mỗi cụm thành các cụm liền nhau tối đa `max_words` từ, chia đều (5 từ -> 3 + 2) để không sót cụm 1 từ."""
+    result = []
+    for words in groups:
+        parts = math.ceil(len(words) / max_words)
+        bounds = [round(k * len(words) / parts) for k in range(parts + 1)]
+        result.extend(words[a:b] for a, b in zip(bounds, bounds[1:]))
+    return result
+
+
+def caption_markup(texts, lines, scales, highlighted=(), color="", colors=None, reset="&HFFFFFF"):
+    """Văn bản ASS: ngắt dòng bằng \\N; từ tô màu giữ nguyên; từ dài hơn cả dòng (scale < 100) thu hẹp riêng.
+    colors: {chỉ số từ: màu ASS} riêng từng từ (thắng `color`)."""
     def token(i):
         text = texts[i]
         if i in highlighted:
-            text = f"{{\\1c{color}&}}{text}{{\\1c&HFFFFFF&}}"
+            text = f"{{\\1c{(colors or {}).get(i, color)}&}}{text}{{\\1c{reset}&}}"
         if scales[i] < 100:
             text = f"{{\\fscx{scales[i]:.3f}\\fscy{scales[i]:.3f}}}{text}{{\\fscx100\\fscy100}}"
         return text
     return "\\N".join(" ".join(token(i) for i in line) for line in lines)
 
 
-def write_ass(groups, ass_path, width, height, style=DEFAULT_STYLE, highlight=None, keywords=(), hook=None):
+def write_ass(groups, ass_path, width, height, style=DEFAULT_STYLE, highlight=None, keywords=(), hook=None,
+              keyword_colors=None, text_color=None, size_ratio=None, label=None, label_terms=None):
     """Ghi phụ đề .ASS đúng kích thước video; trả về thư mục font cho bộ lọc subtitles.
 
     groups: các cụm từ [(start, end, word)] (giây, tính từ đầu video); hook: (chữ, giây) hiện ở đỉnh vùng an toàn
-    ngay từ khung 0, không hiệu ứng mờ dần."""
+    ngay từ khung 0, không hiệu ứng mờ dần. keyword_colors: {chỉ số từ trên toàn bộ lời: '#RRGGBB'} tô màu riêng từng
+    từ khoá; text_color: màu chữ phụ đề (mặc định trắng); size_ratio: cỡ chữ (tỉ lệ cạnh ngắn) thay cho cỡ của kiểu;
+    label: nhãn (vd "ví dụ", ≥ 40 px). label_terms: các cụm (vd "35k") — nhãn đứng đầu dòng của mỗi cụm phụ đề có cụm
+    đó; không có label_terms thì nhãn cố định ở góc trái ngay trên vùng phụ đề suốt thời gian có lời."""
     cfg = STYLES[style]
+    if cfg.get("max_words"):
+        groups = split_word_groups(groups, cfg["max_words"])
     color = ass_color(highlight or cfg["highlight"])
+    base_color = ass_color(text_color) if text_color else "&H00FFFFFF"
+    reset = base_color if text_color else "&HFFFFFF"
+    word_colors = {int(i): ass_color(c) for i, c in (keyword_colors or {}).items()}
     x0, y0, x1, y1 = safe_box(width, height)
-    size = round(min(width, height) * cfg["size"])
+    size = round(min(width, height) * (size_ratio or cfg["size"]))
     outline = max(2, size // cfg["outline_div"])
     shadow = size // cfg["shadow_div"] if cfg["shadow_div"] else 0
     blur = cfg["blur"]
@@ -142,7 +168,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caption,{font_family(cfg["font"])},{size},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,{cfg["bold"]},0,0,0,100,100,{cfg["spacing"]},0,1,{outline},{shadow},2,{margins},{height - y1 + padding},1
+Style: Caption,{font_family(cfg["font"])},{size},{base_color},&H000000FF,&H00000000,&H80000000,{cfg["bold"]},0,0,0,100,100,{cfg["spacing"]},0,1,{outline},{shadow},2,{margins},{height - y1 + padding},1
 Style: Hook,{font_family("bold")},{hook_size},{color},&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,{max(3, hook_size // 12)},0,8,{margins},{y0 + padding},1
 
 [Events]
@@ -151,10 +177,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     limit = (x1 - x0 - 2 * padding) / FIT_MARGIN
 
+    caption_floor = round(min(width, height) * cfg["min_size"]) if cfg.get("min_size") and not size_ratio else None
+    label_size = max(40, round(min(width, height) * 0.037))
+
     def place(texts, name):
-        """(cỡ chữ, dòng, scale từng từ) cho một cụm; tính một lần để mọi sự kiện karaoke của cụm xuống dòng giống nhau."""
+        """(cỡ chữ, dòng, scale từng từ) cho một cụm; tính một lần để mọi sự kiện karaoke của cụm xuống dòng giống nhau.
+        Hook hạ tới HOOK_MIN_SIZE trước, chỉ khi vẫn quá 3 dòng mới hạ tiếp như phụ đề."""
         key, base, spacing = ("bold", hook_size, 0) if name == "Hook" else (cfg["font"], size, cfg["spacing"])
-        fs, font, lines = fit_layout(texts, key, base, spacing, limit, MAX_LINES[name])
+        floor = round(min(width, height) * HOOK_MIN_SIZE) if name == "Hook" else caption_floor
+        fs, font, lines = fit_layout(texts, key, base, spacing, limit, MAX_LINES[name], floor)
+        if len(lines) > MAX_LINES[name] and floor:
+            fs, font, lines = fit_layout(texts, key, base, spacing, limit, MAX_LINES[name])
         return fs, lines, [min(100.0, 100 * limit / max(1.0, text_width(font, t, spacing))) for t in texts]
 
     def dialogue(start, end, name, fs, body):
@@ -169,21 +202,41 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         texts = ass_text(hook[0]).split()
         fs, lines, scales = place(texts, "Hook")
         events.append(dialogue(0.0, hook[1], "Hook", fs, caption_markup(texts, lines, scales)))
+    label_words = [[normalize_word(w) for w in t.split() if normalize_word(w)] for t in (label_terms or [])]
+    label_token = f"({ass_text(label)})" if label else ""
     offset = 0
     for words in groups:
         marks = {i - offset for i in keyword_hits if offset <= i < offset + len(words)}
+        colors = {i - offset: c for i, c in word_colors.items() if offset <= i < offset + len(words)}
+        marks |= set(colors)
         offset += len(words)
         texts = [ass_text(w[2]) for w in words]
+        norm = [normalize_word(w[2]) for w in words]
+        tagged = label_token and any(t and any(norm[k:k + len(t)] == t for k in range(len(norm) - len(t) + 1))
+                                     for t in label_words)
+        if tagged:  # nhãn là "từ" số 0 của cụm để xuống dòng/đo bề ngang chung với chữ
+            texts = [label_token] + texts
+            marks, colors = {i + 1 for i in marks}, {i + 1: c for i, c in colors.items()}
         fs, lines, scales = place(texts, "Caption")
+
+        def body(marked):
+            markup = caption_markup(texts, lines, scales, marked, color, colors, reset)
+            if tagged:
+                markup = markup.replace(label_token, f"{{\\fs{label_size}\\1c{ass_color('#FFD166')}&}}{label_token}"
+                                                     f"{{\\fs{fs}\\1c{reset}&}}", 1)
+            return markup
+
         if style == "karaoke":
             for i, word in enumerate(words):
                 end = words[i + 1][0] if i + 1 < len(words) else words[-1][1]
                 if end > word[0]:
-                    events.append(dialogue(word[0], end, "Caption", fs,
-                                           caption_markup(texts, lines, scales, marks | {i}, color)))
+                    events.append(dialogue(word[0], end, "Caption", fs, body(marks | {i + int(bool(tagged))})))
         else:
-            events.append(dialogue(words[0][0], words[-1][1], "Caption", fs,
-                                   caption_markup(texts, lines, scales, marks, color)))
+            events.append(dialogue(words[0][0], words[-1][1], "Caption", fs, body(marks)))
+    if label and groups and not label_terms:
+        events.append(f"Dialogue: 1,{format_ass_time(0.0)},{format_ass_time(groups[-1][-1][1])},Caption,,0,0,0,,"
+                      f"{{\\an1\\pos({x0 + padding},{round(y1 - padding - 2.6 * size)})\\fs{label_size}}}"
+                      f"{ass_text(label)}")
     Path(ass_path).write_text(header + "\n".join(events) + "\n", encoding="utf-8")
     return Path(font_path(cfg["font"])).parent
 

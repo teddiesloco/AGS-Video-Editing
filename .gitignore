@@ -33,3 +33,4 @@ dist/
 # Cấu hình MCP do scripts/ags_setup.py sinh với đường dẫn tuyệt đối của máy — không commit
 .mcp.json
 .cursor/mcp.json
+proof-*/

@@ -1,9 +1,12 @@
 ---
-description: AGS Video Editing — dựng/edit video bằng script Python + FFmpeg của skill này (cắt lặng, phụ đề karaoke, reframe 9:16, cắt short, video BĐS, giọng đọc tiếng Việt cục bộ + SFX) và kiểm định bằng harness trước khi bàn giao.
+description: AGS Video Editing — dựng/edit video bằng script Python + FFmpeg của skill này (AGS Video Studio "nói 1 câu ra video 9:16" theo bảng chọn món, cắt lặng, phụ đề karaoke, reframe 9:16, cắt short, video BĐS, giọng đọc tiếng Việt + SFX) và kiểm định bằng harness trước khi bàn giao.
 alwaysApply: false
 ---
 
 - Đọc @AGENTS.md trước khi chạy lệnh video; làm đúng mục "Quy tắc bắt buộc" và "Môi trường" trong đó.
+- Khách muốn "làm video cho ngành/chủ đề X" (bảng chọn món) → làm đúng @skills/ags-studio/SKILL.md: hỏi ngược đúng 3 câu
+  (bỏ câu đã nói), tự viết kịch bản Việt hoá và chạy `ags_vi_script.py validate` tới khi đạt, báo chi phí VND rồi CHỜ khách
+  nói "chạy" mới `ags_studio.py run --confirmed`, đưa ảnh lưới để duyệt, sửa bằng `ags_studio.py revise --say`.
 - Môi trường: `python scripts/ags_setup.py --check` (Python của venv trong thư mục skill). Chưa sẵn sàng → xin người dùng một
   câu đồng ý rồi chạy `CAI-DAT-MAC.sh --yes` / `CAI-DAT-WIN.bat --yes`; không hỏi về Python/venv.
 - Ưu tiên tool của MCP server `ags` nếu Cursor đã nạp (`.cursor/mcp.json` do installer sinh với đường dẫn tuyệt đối);

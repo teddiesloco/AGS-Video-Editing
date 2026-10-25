@@ -4,7 +4,7 @@
 
 ## 1. Chạy harness kèm contact sheet
 ```bash
-python harness/ags_anti_slop_guard.py <video.mp4> --contact-sheet <video>_sheet.jpg [--frames 12]
+python harness/ags_anti_slop_guard.py <video.mp4> --contact-sheet <video>_sheet.jpg --debug-zones [--frames 12]
 ```
 | Mã thoát | Nghĩa | Việc phải làm |
 |---|---|---|
@@ -19,7 +19,8 @@ Ngưỡng (khai báo ở đầu `harness/ags_anti_slop_guard.py`):
 - Dòng `[Đo]` in thời lượng, LUFS, true peak, độ lệch hình-tiếng — dùng cho báo cáo bàn giao.
 
 ## 2. Soát contact sheet bằng mắt (hoặc model thị giác)
-Mở ảnh contact sheet (ô `#0` là khung 0, các ô sau rải đều tới cuối; video dọc có khung hồng = vùng an toàn 9:16).
+Mở ảnh contact sheet (ô `#0` là khung 0, các ô sau rải đều tới cuối; chạy harness với `--debug-zones` thì video dọc có khung hồng
+= vùng an toàn 9:16 — bản gửi khách chạy không có cờ này).
 Chấm từng tiêu chí:
 1. **Hook ở khung 0:** video có hook thì ô `#0` phải thấy rõ chữ hook, đủ đậm.
 2. **Vùng an toàn:** mọi chữ (phụ đề, hook, nhãn, ticker) nằm trong khung hồng.

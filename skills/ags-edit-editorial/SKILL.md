@@ -51,7 +51,7 @@ Giải thích đầy đủ, nguồn và giới hạn truy cập: `references/lay
 
 ## Kiểm định (bắt buộc)
 ```bash
-python harness/ags_anti_slop_guard.py <video_xuat.mp4> --contact-sheet <video_xuat>_sheet.jpg
+python harness/ags_anti_slop_guard.py <video_xuat.mp4> --contact-sheet <video_xuat>_sheet.jpg --debug-zones
 ```
 Trên contact sheet: chữ phải nằm trong khung hồng (vùng an toàn), đủ dấu tiếng Việt, kiểu karaoke thấy từ được tô màu.
 Exit `0` đạt · `2` cảnh báo · `1` lỗi. Vòng soát: `harness/QUY-TRINH-KIEM-DINH.md`.

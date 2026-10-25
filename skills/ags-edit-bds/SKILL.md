@@ -37,7 +37,7 @@ python scripts/ags_bds_cli.py beats --music nhac.mp3 --beat-step 4          # t�
 python scripts/ags_bds_cli.py beats --bpm 120 --beat-step 4 --duration 60   # BPM cho trước
 ```
 Dò beat bằng numpy (onset 30 Hz–4 kHz + tự tương quan 60–180 BPM): hợp nhạc nhịp đều; nhạc đổi tempo thì dùng `--bpm`.
-Chữ do engine vẽ tự nằm trong vùng an toàn 9:16 (khung 1080x1920: x 120–780, y 288–1248); tọa độ polygon/ô lô do bạn
+Chữ do engine vẽ tự nằm trong vùng an toàn 9:16 (khung 1080x1920: x 200–880, y 288–1248); tọa độ polygon/ô lô do bạn
 đặt — để trong vùng này để không bị nút và caption của TikTok/Reels/Shorts che.
 
 ## Bước 3 — Sinh asset

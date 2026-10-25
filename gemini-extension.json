@@ -1,7 +1,7 @@
 {
   "name": "ags-video-editing",
   "version": "1.3.0",
-  "description": "AGS (Agent Space) — edit video tự động: cắt lặng, phụ đề karaoke, reframe 9:16 bám mặt, cắt short, video BĐS, giọng đọc tiếng Việt cục bộ + SFX CC0, harness kiểm định. Chạy scripts/ags_setup.py sau khi cài.",
+  "description": "AGS (Agent Space) — dựng/edit video tự động: AGS Video Studio (nói 1 câu → hỏi ngược 3 câu → báo chi phí → video 9:16 + ảnh lưới, sửa bằng lời), cắt lặng, phụ đề karaoke, reframe 9:16 bám mặt, cắt short, video BĐS, giọng đọc tiếng Việt + SFX CC0, harness kiểm định. Chạy scripts/ags_setup.py sau khi cài.",
   "contextFileName": "GEMINI.md",
   "mcpServers": {
     "ags": {

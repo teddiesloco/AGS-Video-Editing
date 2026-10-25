@@ -5,8 +5,9 @@ AGS (Agent Space) — đóng gói bản phân phối từ mã nguồn trong repo
 Tạo hai file trong dist/ (dist/ không commit):
   dist/ags-video-editing.zip      BẢN CÀI ĐẶT CỤC BỘ — thả vào thư mục skill của Claude Code / Antigravity / Codex /
                                   Gemini CLI / Cursor. Gốc zip là thư mục `ags-video-editing/` có SKILL.md ở gốc, kèm
-                                  đủ mã nguồn (scripts/, mcp/, harness/, tests/), assets/ (SFX CC0), 9 skill con,
-                                  requirements*.txt, installer macOS/Windows, adapters, giấy phép và thông báo bên thứ ba.
+                                  đủ mã nguồn (scripts/, mcp/, harness/, tests/), config/ (menu, bảng giá, mẫu câu của
+                                  AGS Video Studio), assets/ (SFX CC0), 10 skill con, requirements*.txt, installer
+                                  macOS/Windows, adapters, giấy phép và thông báo bên thứ ba.
                                   Không kèm venv, model, cấu hình sinh ra từ máy (.mcp.json, .cursor/mcp.json).
   dist/ags-video-editing-web.zip  Skill cho claude.ai (Customize → Skills → Upload) — CHỈ hướng dẫn/lập kế hoạch,
                                   không có script chạy (web không đảm bảo FFmpeg/pip/Internet).
@@ -37,7 +38,7 @@ WEB_SOURCE = ROOT / "adapters" / "web" / WEB_NAME
 TOP_FILES = ["SKILL.md", "AGENTS.md", "GEMINI.md", "README.md", "HUONG-DAN-SU-DUNG.md", "CHANGELOG.md", "LICENSE",
              "LICENSE-VI.md", "THIRD_PARTY_NOTICES.md", "CAI-DAT-MAC.sh", "CAI-DAT-WIN.bat", "gemini-extension.json",
              "requirements.txt", "requirements-mcp.txt", "requirements-tts.txt"]
-TOP_DIRS = ["scripts", "mcp", "harness", "assets", "skills", "adapters", "tests", ".cursor/rules"]
+TOP_DIRS = ["scripts", "mcp", "harness", "assets", "config", "skills", "adapters", "tests", ".cursor/rules"]
 SKIP_PARTS = {"__pycache__", ".DS_Store", ".git", "venv", "dist", "output"}
 SKIP_SUFFIX = {".pyc", ".pyo", ".wav", ".mp4", ".mov", ".mkv", ".webm", ".mp3", ".m4a"}
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -100,11 +101,11 @@ def collect(base_dirs, base_files):
 
 
 def local_modules(files):
-    """Tên module nội bộ: file .py trong scripts/, harness/, mcp/ và gói con (scripts/bds)."""
+    """Tên module nội bộ: file .py trong scripts/, harness/, mcp/, tests/ và gói con (scripts/bds)."""
     names = {}
     for rel in files:
         parts = rel.split("/")
-        if rel.endswith(".py") and parts[0] in ("scripts", "harness", "mcp"):
+        if rel.endswith(".py") and parts[0] in ("scripts", "harness", "mcp", "tests"):
             names[parts[-1][:-3] if len(parts) == 2 else parts[1]] = rel
             if len(parts) > 2:
                 names[parts[1]] = rel

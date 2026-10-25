@@ -65,11 +65,21 @@ def quietest(db, t, before, after):
     return (lo + int(np.argmin(db[lo:hi])) + 0.5) * HOP
 
 
-def plan_keep_ranges(total, silences, fillers, db):
-    """Đoạn giữ [(start, end)] giây = cả file trừ khoảng lặng (đã chừa đệm) và từ đệm."""
+INSIGHT_MATCH = 0.6   # câu chốt kết thúc tối đa 0.6 s trước (hoặc 0.1 s sau) điểm bắt đầu khoảng lặng
+
+
+def plan_keep_ranges(total, silences, fillers, db, insight_pause=0.0, insight_ends=()):
+    """Đoạn giữ [(start, end)] giây = cả file trừ khoảng lặng (đã chừa đệm) và từ đệm.
+    insight_pause > 0: khoảng lặng ngay sau một mốc kết câu trong insight_ends giữ lại đến mốc đó + insight_pause
+    (không vượt quá khoảng lặng). Không có mốc nào thì không giữ thêm (chỉ đệm POST_ROLL như cũ)."""
     cuts = []
+    insight_pts = sorted(float(t) for t in (insight_ends or ()))
     for start, end in silences:
         a = start + POST_ROLL if start > 0 else 0.0
+        if insight_pause > 0 and start > 0:
+            near = [t for t in insight_pts if start - INSIGHT_MATCH <= t <= start + 0.1]
+            if near:
+                a = max(a, near[-1] + float(insight_pause))
         b = end - PRE_ROLL if end < total - 2 * HOP else total
         if b > a:
             cuts.append((a, b))
@@ -146,7 +156,7 @@ def render(video_path, output_path, frame_ranges, fps, audio_raw, channels):
     ])
 
 
-def cut_silence(video_path, output_path, model_size="base", min_silence=0.4, threshold_db=-30.0):
+def cut_silence(video_path, output_path, model_size="base", min_silence=0.4, threshold_db=-30.0, insight_pause=0.0):
     video_path = Path(video_path).resolve()
     output_path = Path(output_path).resolve()
     info = video_info(video_path)
@@ -161,9 +171,11 @@ def cut_silence(video_path, output_path, model_size="base", min_silence=0.4, thr
     silences = find_silences(db, threshold_db, min_silence)
 
     print(f"[*] Nhận diện từ đệm bằng Faster-Whisper ({model_size})...")
-    fillers = [(s, e) for s, e, w in transcribe_words(video_path, model_size) if normalize_word(w) in FILLERS]
+    words = transcribe_words(video_path, model_size)
+    fillers = [(s, e) for s, e, w in words if normalize_word(w) in FILLERS]
+    insight_ends = [e for _s, e, w in words if w.strip()[-1:] in ".!?…"]
 
-    keep = to_frames(plan_keep_ranges(total, silences, fillers, db), fps, int(total * fps))
+    keep = to_frames(plan_keep_ranges(total, silences, fillers, db, insight_pause=insight_pause, insight_ends=insight_ends), fps, int(total * fps))
     if not keep:
         sys.exit("❌ Không còn đoạn có tiếng nói để giữ (thử --threshold-db thấp hơn, ví dụ -40).")
     kept = sum(b - a for a, b in keep) / fps
@@ -186,8 +198,11 @@ if __name__ == "__main__":
     parser.add_argument("--min-silence", type=float, default=0.4, help="Khoảng lặng dài hơn mức này (giây) sẽ bị cắt")
     parser.add_argument("--threshold-db", type=float, default=-30.0,
                         help="Ngưỡng lặng, tính bằng dB so với mức giọng nói của file (mặc định -30; -20 cắt mạnh hơn)")
+    parser.add_argument("--insight-pause", type=float, default=0.0,
+                        help="Giữ nhịp thở Micro-pause (giây, vd 0.35) sau câu chốt kết thúc bằng dấu chấm/chấm than")
     args = parser.parse_args()
 
     inp = Path(args.input)
     out = args.out or inp.with_name(f"{inp.stem}_clean.mp4")
-    cut_silence(inp, out, model_size=args.model, min_silence=args.min_silence, threshold_db=args.threshold_db)
+    cut_silence(inp, out, model_size=args.model, min_silence=args.min_silence,
+                threshold_db=args.threshold_db, insight_pause=args.insight_pause)

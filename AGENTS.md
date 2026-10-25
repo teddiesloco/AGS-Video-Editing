@@ -17,8 +17,14 @@ Cursor đọc trực tiếp file này; Gemini CLI nạp qua `GEMINI.md`; Claude 
   (~230 KB), TTS tải VieNeu (~1,0 GB) / ZeroTTS (~1,7 GB). Tải trước TTS bằng `python scripts/ags_setup.py --warmup-tts`.
 
 ## Việc → lệnh
+Khách nói "làm video cho ngành/chủ đề X" (bảng chọn món ở đầu `README.md`/`SKILL.md`) mà chưa nói rõ cách dựng → làm đúng
+`skills/ags-studio/SKILL.md`: hỏi ngược đúng 3 câu (bỏ câu khách đã nói), agent tự viết kịch bản Việt hoá và chạy `validate`
+tới khi đạt, báo chi phí VND rồi CHỜ khách nói "chạy" mới `run --confirmed`, đưa ảnh lưới để duyệt, sửa bằng `revise --say`.
+
 | Việc | Lệnh | Chi tiết |
 |---|---|---|
+| AGS Video Studio (1 câu → video 9:16) | `python scripts/ags_studio.py intake\|quote\|run\|revise\|variants\|menu ... --json` | `skills/ags-studio/SKILL.md` |
+| Kiểm kịch bản Việt hoá / câu mở / số liệu | `python scripts/ags_vi_script.py validate\|hook\|claims\|profile ... --json` | `skills/ags-studio/SKILL.md` |
 | Cắt lặng, bỏ từ đệm | `python scripts/ags_cut_silence.py <video>` | `skills/ags-edit-az/SKILL.md` |
 | Chữ chìm sau người | `python scripts/ags_text_behind_person.py <video> --text "<HOOK>"` | `skills/ags-edit-hook/SKILL.md` |
 | Phụ đề tạp chí / karaoke | `python scripts/ags_editorial_sub.py <video> [--style karaoke]` | `skills/ags-edit-editorial/SKILL.md` |
@@ -40,14 +46,21 @@ Cursor đọc trực tiếp file này; Gemini CLI nạp qua `GEMINI.md`; Claude 
 4. Vị trí chữ để script tự đặt: vùng an toàn 9:16 định nghĩa một lần ở `scripts/ags_common.py` (`SAFE_ZONE_9X16`).
 5. Không bịa số liệu: giá, diện tích, pháp lý BĐS; hook của short phải đúng nội dung đoạn đó. Thiếu thì hỏi.
 6. Video dài → short: bóc băng trước, chọn đoạn theo `skills/ags-clip-shorts/references/chon-doan-short.md`, rồi mới cắt.
-7. Giọng đọc tổng hợp: chỉ giọng có sẵn (không clone), chạy cục bộ. Ưu tiên `vieneu` (Apache-2.0); giọng `zerotts` chỉ để
-   đánh giá/demo, phải nói rõ là giọng tổng hợp (`THIRD_PARTY_NOTICES.md`). Không ghi đè file đầu ra — đặt tên mới.
+7. Giọng đọc tổng hợp: chỉ giọng có sẵn (không clone). Ưu tiên `vieneu` (Apache-2.0, chạy cục bộ); giọng `zerotts` chỉ để
+   đánh giá/demo, phải nói rõ là giọng tổng hợp (`THIRD_PARTY_NOTICES.md`). Giọng Google AI (`gemini`) gọi dịch vụ ngoài: chỉ
+   dùng khi khách chọn và đã đồng ý chi phí; thiếu khoá thì báo, không tự đổi giọng. Không ghi đè file đầu ra — đặt tên mới.
+8. Không hứa thu nhập/lượt xem; không bịa số liệu kết quả của khách (chỉ dùng số khách đưa, hoặc ví dụ có nhãn "ví dụ");
+   "Business Thinking"/"Jetlag" chỉ là thể loại — không dùng tên, logo, hình, tiếng, câu chữ gốc của các kênh đó.
+   Không in/ghi khoá API ở bất kỳ đâu.
 
 ## MCP server (tuỳ chọn — chạy script trực tiếp qua terminal là đủ)
 `mcp/ags_mcp_server.py` (stdio; thư viện `mcp` đã nằm trong venv). Tool: `cut_silence`, `text_behind_person`, `editorial_sub`,
 `voice_to_kinetic`, `voice_to_doodle`, `reframe`, `clip_shorts_transcript`, `clip_shorts_cut`, `bds_draft`, `bds_render`,
-`anti_slop_guard`, `tts_voices`, `tts_synthesize`, `sfx_list`, `sfx_mix` — mỗi tool trả `output`, `exit_code`, `stderr_tail`,
-`stdout_tail`. Cấu hình **do installer sinh** với đường dẫn tuyệt đối của máy này: `.mcp.json` (Claude Code, OMP),
+`anti_slop_guard`, `tts_voices`, `tts_synthesize`, `sfx_list`, `sfx_mix`, `blender_3d_render` — mỗi tool trả `output`, `exit_code`, `stderr_tail`,
+`stdout_tail`; và `ags_studio_menu`, `ags_studio_intake`, `ags_studio_quote`, `ags_studio_run`, `ags_studio_revise`,
+`ags_studio_variants`, `ags_studio_proof`, `ags_studio_validate_script`, `ags_studio_hook`, `ags_studio_claims`,
+`ags_studio_profile` bọc đúng lệnh `ags_studio.py` / `ags_vi_script.py` (trả `exit_code`, `result`, `stderr_tail`,
+`stdout_tail`). Cấu hình **do installer sinh** với đường dẫn tuyệt đối của máy này: `.mcp.json` (Claude Code, OMP),
 `.cursor/mcp.json` (Cursor), `gemini-extension.json` (Gemini CLI, cập nhật interpreter theo hệ điều hành). Dùng ở mọi dự án /
 Antigravity / Codex / Claude Desktop: `python scripts/ags_setup.py --print-mcp` (hoặc `--register-claude-code`);
 chi tiết `HUONG-DAN-SU-DUNG.md`, Phần 3. Tải model TTS lần đầu lâu hơn giới hạn thời gian tool của nhiều client — chạy

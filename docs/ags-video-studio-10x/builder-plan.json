@@ -1,0 +1,105 @@
+{
+  "feature": "ags-video-studio-10x",
+  "ba_audit_status": "PASS",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Architecture & Plan Lock",
+      "agents": [
+        "planner",
+        "ags-advisor"
+      ],
+      "skills": [
+        "ags-plan",
+        "ags-advise"
+      ],
+      "tasks": [
+        "Lock scope from docs/ags-video-studio-10x/srs/spec.md: 12 BR, 14 error codes",
+        "Confirm 1 screen(s), 9 endpoint(s), 1 user story file(s) before coding"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Frontend UX/UI",
+      "agents": [
+        "ui-ux-designer"
+      ],
+      "skills": [
+        "ags-frontend-design",
+        "ags-ui-ux-pro-max",
+        "ags-ui-styling",
+        "ags-frontend-development",
+        "ags-react-best-practices"
+      ],
+      "tasks": [
+        "Build screen main (docs/ags-video-studio-10x/ascii-screen/main.md) with Loading/Empty/Error/Populated states; data-testid: ags-vs-contact-sheet, ags-vs-menu, ags-vs-question, ags-vs-quote-run, ags-vs-result, ags-vs-revise, ags-vs-title, ags-vs-voice"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Backend API & DB",
+      "agents": [
+        "fullstack-developer"
+      ],
+      "skills": [
+        "ags-backend-development",
+        "ags-databases",
+        "ags-better-auth",
+        "ags-payment-integration",
+        "ags-security"
+      ],
+      "tasks": [
+        "Implement endpoint: `AMP-ags-video-studio-10x-001` `FR-ags-video-studio-10x-004` `ags-vs-question` → `POST /api/v1/studio/intake` `{\"answers\":{\"topic\",\"preset\",\"voice\"}}` → `studio_job.answers` preset ∈ {business-thinking-60s, jetlag-vi, bds, editorial, isometric-3d}; `E-ags-video-studio-10x-002` `P0`",
+        "Implement endpoint: `AMP-ags-video-studio-10x-002` `FR-ags-video-studio-10x-005` `ags-vs-quote-run` (xem chi phí) → `POST /api/v1/studio/quote` `{\"job_id\"}` → `studio_job.quote` Đọc `config/pricing.json` (BR-004) `P0`",
+        "Implement endpoint: `AMP-ags-video-studio-10x-003` `FR-ags-video-studio-10x-005` `ags-vs-quote-run` (bấm Chạy) → `POST /api/v1/studio/run` `{\"job_id\",\"confirmed\":true}` → `studio_job.status` `confirmed` bắt buộc; `E-ags-video-studio-10x-003` `P0`",
+        "Implement endpoint: `AMP-ags-video-studio-10x-004` `FR-ags-video-studio-10x-008` (agent) → `POST /api/v1/studio/validate-script` `{\"script\",\"duration_sec\",\"source_text?\"}` → `studio_job.script_report` BR-001/002/003; `E-ags-video-studio-10x-004/005` `P0`",
+        "Implement endpoint: `AMP-ags-video-studio-10x-005` `FR-ags-video-studio-10x-015` `ags-vs-revise` → `POST /api/v1/studio/revise` `{\"job_id\",\"say\"}` → `studio_job.revisions[]` Whitelist BR-007; `E-ags-video-studio-10x-010` `P1`",
+        "Implement endpoint: `AMP-ags-video-studio-10x-006` `FR-ags-video-studio-10x-004` `studio_job.next_question` → `GET /api/v1/studio/jobs/{id}` `.next_question` → `ags-vs-question` Rỗng khi đủ 3 câu `P0`",
+        "Implement endpoint: `AMP-ags-video-studio-10x-014` `FR-ags-video-studio-10x-018` `ags-vs-question` (hook) → `POST /api/v1/studio/hook` `{\"script\",\"type?\"}` → `studio_job.hook_report` BR-010; `E-ags-video-studio-10x-012` `P0`",
+        "Implement endpoint: `AMP-ags-video-studio-10x-015` `FR-ags-video-studio-10x-020` (khách dán mẫu) → `POST /api/v1/studio/profile` `{\"samples\":[url text]}` → `studio_job.profile` SSRF-safe; chỉ đo số liệu, không tải hình/tiếng; `E-ags-video-studio-10x-004` `P1`",
+        "Implement endpoint: `AMP-ags-video-studio-10x-016` `FR-ags-video-studio-10x-023` `ags-vs-revise` (\"làm 3 bản thử\") → `POST /api/v1/studio/variants` `{\"job_id\",\"count\":3}` → `studio_job.variants[]` Báo chi phí thêm trước; `E-ags-video-studio-10x-003` `P1`",
+        "Enforce business rules: BR-ags-video-studio-10x-001, BR-ags-video-studio-10x-002, BR-ags-video-studio-10x-003, BR-ags-video-studio-10x-004, BR-ags-video-studio-10x-005, BR-ags-video-studio-10x-006, BR-ags-video-studio-10x-007, BR-ags-video-studio-10x-008, BR-ags-video-studio-10x-009, BR-ags-video-studio-10x-010, BR-ags-video-studio-10x-011, BR-ags-video-studio-10x-012",
+        "Return error codes: E-ags-video-studio-10x-001, E-ags-video-studio-10x-002, E-ags-video-studio-10x-003, E-ags-video-studio-10x-004, E-ags-video-studio-10x-005, E-ags-video-studio-10x-006, E-ags-video-studio-10x-007, E-ags-video-studio-10x-008, E-ags-video-studio-10x-009, E-ags-video-studio-10x-010, E-ags-video-studio-10x-011, E-ags-video-studio-10x-012, E-ags-video-studio-10x-013, E-ags-video-studio-10x-014"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "BDD Verification & Review",
+      "agents": [
+        "tester",
+        "code-reviewer",
+        "code-simplifier"
+      ],
+      "skills": [
+        "ags-test",
+        "ags-web-testing",
+        "ags-code-review",
+        "ags-ship"
+      ],
+      "tasks": [
+        "Automate docs/ags-video-studio-10x/userstories/us-001.md: 6 Given/When/Then scenario(s) via E2E",
+        "Review diff against srs/spec.md, api-map.md and the prototype before merge"
+      ]
+    }
+  ],
+  "generated_from": [
+    "docs/ags-video-studio-10x/api/api-map.md",
+    "docs/ags-video-studio-10x/ascii-screen/_index.md",
+    "docs/ags-video-studio-10x/ascii-screen/main.md",
+    "docs/ags-video-studio-10x/html-design/prototype.html",
+    "docs/ags-video-studio-10x/research/viral-concepts.md",
+    "docs/ags-video-studio-10x/srs/spec.md",
+    "docs/ags-video-studio-10x/srs/user-flow.md",
+    "docs/ags-video-studio-10x/userstories/us-001.md"
+  ],
+  "sha256": {
+    "docs/ags-video-studio-10x/research/viral-concepts.md": "7289bf3ee6a1f1a3aa4d49407d478e883270a4585e062a436c015367e2e48c00",
+    "docs/ags-video-studio-10x/srs/spec.md": "3f50c4830abfb30af412c0e93f1a14ec34263f24a42a9ed56390d5ac8ab9077d",
+    "docs/ags-video-studio-10x/srs/user-flow.md": "1b3fd4c6dcb76e9ac434379b9aaea37a761de393c571b92ded8e9bd7f8acb05b",
+    "docs/ags-video-studio-10x/ascii-screen/_index.md": "f8aab41a6d8d8755e77125213513d85697e9e0037c7812747b39c40eb9a0ad5d",
+    "docs/ags-video-studio-10x/ascii-screen/main.md": "df72730d61d5b8a1ddd2893ee0acc7d53deb941531fd78e94ee324898ac4c0ff",
+    "docs/ags-video-studio-10x/api/api-map.md": "407f2efd6d563194ca4679dd86b5727e878613c91d0947bbb1976e2bc57747fb",
+    "docs/ags-video-studio-10x/html-design/prototype.html": "a78eca6e9cf9ec66620a6913136ae89f07f66d5a93466a3bc731fcaf2f532be4",
+    "docs/ags-video-studio-10x/userstories/us-001.md": "f874979547caaeecd28ac37f79f3b6c8eb58a172419672a4bf9de3b9b229a5ee"
+  }
+}

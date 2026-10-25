@@ -4,6 +4,8 @@ AGS (Agent Space) Video Editing — MCP server (stdio).
 
 Mỗi tool gọi đúng script trong repo bằng chính Python đang chạy server và trả về:
   output (đường dẫn kết quả), exit_code, stderr_tail, stdout_tail.
+Tool AGS Video Studio `ags_studio_*` bọc `ags_studio.py` / `ags_vi_script.py --json` và trả exit_code, result (JSON của
+lệnh), stderr_tail, stdout_tail.
 Chạy: python mcp/ags_mcp_server.py   (cần: pip install -r requirements.txt -r requirements-mcp.txt)
 """
 
@@ -27,11 +29,28 @@ from ags_client_license import assert_client_licensed  # noqa: E402
 mcp = FastMCP("ags-video-editing")
 
 
-def _run(args: List[object], output: str) -> dict:
+def _exec(args: List[object]) -> subprocess.CompletedProcess:
     assert_client_licensed()
-    proc = subprocess.run([sys.executable, *[str(a) for a in args]], cwd=str(ROOT), capture_output=True,
+    return subprocess.run([sys.executable, *[str(a) for a in args]], cwd=str(ROOT), capture_output=True,
                           text=True, encoding="utf-8", errors="replace")
+
+
+def _run(args: List[object], output: str) -> dict:
+    proc = _exec(args)
     return {"output": output, "exit_code": proc.returncode,
+            "stderr_tail": proc.stderr[-TAIL:], "stdout_tail": proc.stdout[-TAIL:]}
+
+
+def _studio(script: str, *args: object) -> dict:
+    """AGS Video Studio: chạy `scripts/<script> ... --json`; `result` = JSON lệnh in ra (None nếu stdout không phải JSON).
+    ags_studio.py: exit 0 đạt · 2 lỗi nghiệp vụ (result.error.code/message) · 1 lỗi giấy phép/hệ thống.
+    ags_vi_script.py: exit 0 đạt · 1 chưa đạt (result.errors[]) · 2 sai tham số."""
+    proc = _exec([SCRIPTS / script, *args, "--json"])
+    try:
+        result = json.loads(proc.stdout)
+    except ValueError:
+        result = None
+    return {"exit_code": proc.returncode, "result": result,
             "stderr_tail": proc.stderr[-TAIL:], "stdout_tail": proc.stdout[-TAIL:]}
 
 
@@ -183,6 +202,25 @@ def bds_render(output_path: str, clips: Optional[List[str]] = None, images: Opti
 
 
 @mcp.tool()
+def blender_3d_render(output_path: str, scene_preset: str = "auto", seconds: float = 6.0, title: str = "",
+                      mode: str = "auto") -> dict:
+    """Dựng cảnh 3D 1080x1920 30fps bằng Blender chạy ngầm. scene_preset: 'blender_3d_bds' (lô đất nhô cao + cột mốc
+    phát sáng + camera bay quỹ đạo), 'blender_3d_isometric' (01 INTAKE -> 02 AI CORE -> 03 OUTCOME), 'blender_3d_product'
+    (bục xoay 360°) hoặc 'auto' (chọn theo title). mode='auto': máy chưa có Blender thì tự dựng bằng Canvas 30fps
+    (render.engine='canvas', kèm fallback_reason); mode='blender': báo lỗi nếu thiếu Blender."""
+    script = SCRIPTS / "ags_blender_3d.py"
+    if not script.is_file():
+        return {"output": output_path, "exit_code": 1, "stdout_tail": "",
+                "stderr_tail": "BLENDER_ADDON_MISSING — add-on Blender 3D là tuỳ chọn, chưa cài: giải nén "
+                               "ags-blender-3d-addon.zip vào thư mục skill (có sẵn scripts/) rồi gọi lại."}
+    result = _run([script, "--preset", scene_preset, "--out", output_path,
+                   "--seconds", seconds, "--title", title, "--mode", mode], output_path)
+    if result["exit_code"] == 0:
+        result["render"] = _last_json(result)
+    return result
+
+
+@mcp.tool()
 def anti_slop_guard(video_path: str, contact_sheet: str = "", frames: int = 12) -> dict:
     """Kiểm định video trước khi bàn giao. exit_code 0 = đạt, 2 = có cảnh báo, 1 = lỗi nghiêm trọng.
     contact_sheet: đường dẫn ảnh .jpg để xuất lưới `frames` khung (khung 0 + rải đều) — mở ảnh ra soát bằng mắt."""
@@ -229,6 +267,120 @@ def sfx_mix(input_path: str, events: List[dict], output_path: str) -> dict:
         manifest.write_text(json.dumps(events, ensure_ascii=False), encoding="utf-8")
         return _run([SCRIPTS / "ags_sfx.py", "mix", input_path, "--events", manifest,
                      "--out", output_path], output_path)
+
+
+@mcp.tool()
+def ags_studio_menu() -> dict:
+    """AGS Video Studio — bảng chọn món (ngành/ý tưởng → câu mẫu → mẫu video) của bản cài, nhãn lời thường từ config/menu.json."""
+    return _studio("ags_studio.py", "menu")
+
+
+@mcp.tool()
+def ags_studio_intake(request: str = "", job_dir: str = "", topic: str = "", preset: str = "", voice: str = "",
+                      images: str = "") -> dict:
+    """AGS Video Studio bước 1 — hỏi ngược đúng 3 câu (ngành/chủ đề → mẫu → giọng), bỏ câu khách đã nói. Lần đầu:
+    request = câu nguyên văn của khách (job_dir trống → tạo việc mới, result.job_dir). Các lần sau: job_dir + câu trả lời
+    vừa hỏi (topic | preset: business-thinking-60s/jetlag-vi/bds/editorial/isometric-3d | voice: synth/vieneu/gemini).
+    images: 'ai' (ảnh AI, có phí) | 'free' — chỉ khi khách tự nhắc. result.next_question {key,text,choices}; null = đủ."""
+    args: List[object] = ["intake"]
+    for flag, value in (("--request", request), ("--job-dir", job_dir), ("--topic", topic), ("--preset", preset),
+                        ("--voice", voice), ("--images", images)):
+        if value:
+            args += [flag, value]
+    return _studio("ags_studio.py", *args)
+
+
+@mcp.tool()
+def ags_studio_quote(job_dir: str, script_path: str = "", hook_text: str = "",
+                     claims: Optional[List[Dict[str, str]]] = None, source_url: str = "", source_text: str = "",
+                     image_prompts: Optional[List[str]] = None) -> dict:
+    """AGS Video Studio bước 3 — chi phí bằng VND (result.quote.total_vnd), đọc cho khách rồi CHỜ khách nói 'chạy'.
+    script_path = kịch bản agent viết (câu đầu = câu mở đọc), hook_text = chữ mở trên hình ≤ 8 từ, claims =
+    [{"text", "claim_source": "khach-nhap"|"tai-lieu:<tên>"|"vi-du"}], source_url/source_text = nguồn tham khảo để chặn chép
+    quá 8 từ, image_prompts = 1 chủ thể ảnh AI (tiếng Anh) cho mỗi câu, đúng thứ tự câu. Kịch bản chưa đạt →
+    E-ags-video-studio-10x-004/005/012/013. Không có script_path → báo giá ước tính."""
+    with tempfile.TemporaryDirectory(prefix="ags_studio_") as tmp:
+        args: List[object] = ["quote", "--job-dir", job_dir]
+        for flag, value in (("--script-file", script_path), ("--hook-text", hook_text), ("--source-url", source_url)):
+            if value:
+                args += [flag, value]
+        files = (("--claims-file", "claims.json", json.dumps(claims, ensure_ascii=False) if claims else ""),
+                 ("--source-file", "source.txt", source_text),
+                 ("--image-prompts-file", "image-prompts.json",
+                  json.dumps(image_prompts, ensure_ascii=False) if image_prompts else ""))
+        for flag, name, content in files:
+            if content:
+                (Path(tmp) / name).write_text(content, encoding="utf-8")
+                args += [flag, Path(tmp) / name]
+        return _studio("ags_studio.py", *args)
+
+
+@mcp.tool()
+def ags_studio_run(job_dir: str, confirmed: bool = False) -> dict:
+    """AGS Video Studio bước 4 — dựng mp4 9:16 + contact-sheet.jpg. confirmed=true CHỈ khi khách đã nói 'chạy' sau khi xem
+    chi phí; confirmed=false → E-ags-video-studio-10x-003, không dựng, không gọi dịch vụ ngoài."""
+    return _studio("ags_studio.py", "run", "--job-dir", job_dir, *(["--confirmed"] if confirmed else []))
+
+
+@mcp.tool()
+def ags_studio_revise(job_dir: str, say: str, confirmed: bool = False) -> dict:
+    """AGS Video Studio bước 6 — sửa bằng lời thường: say = câu nguyên văn của khách ('đổi sub sang vàng'). Câu không rõ →
+    E-ags-video-studio-10x-010 kèm gợi ý. Sửa phát sinh phí → báo chi phí, khách nói 'chạy' rồi gọi lại với confirmed=true."""
+    return _studio("ags_studio.py", "revise", "--job-dir", job_dir, "--say", say, *(["--confirmed"] if confirmed else []))
+
+
+@mcp.tool()
+def ags_studio_variants(job_dir: str, hooks: List[str], count: int = 3, confirmed: bool = False) -> dict:
+    """AGS Video Studio — 'làm 3 bản thử': hooks = 3 câu mở thuộc 3 loại khác nhau; các mp4 chỉ khác 3 giây đầu. Báo chi
+    phí trước; confirmed=true chỉ sau khi khách nói 'chạy'."""
+    return _studio("ags_studio.py", "variants", "--job-dir", job_dir, "--count", count,
+                   *[part for hook in hooks for part in ("--hook", hook)], *(["--confirmed"] if confirmed else []))
+
+
+@mcp.tool()
+def ags_studio_proof(spec_path: str, out_dir: str, confirmed: bool = False) -> dict:
+    """AGS Video Studio — bằng chứng render của người bán (mp4 + contact sheet + proof-manifest.json). Không chạy cho khách;
+    confirmed=true khi người bán đã đồng ý chi phí dịch vụ ngoài."""
+    return _studio("ags_studio.py", "proof", "--spec", spec_path, "--out-dir", out_dir,
+                   *(["--confirmed"] if confirmed else []))
+
+
+@mcp.tool()
+def ags_studio_validate_script(script: str, duration_sec: float, source_text: str = "") -> dict:
+    """Kiểm kịch bản Việt hoá (tất định, không mạng): câu ≤ 16 từ, nhịp 2,4 từ/giây ±10%, không dịch máy, không chép
+    nguồn quá 8 từ (source_text = văn bản tham khảo nếu có). result.ok=false → viết lại đúng các câu trong result.errors[]."""
+    with tempfile.TemporaryDirectory(prefix="ags_studio_") as tmp:
+        args: List[object] = ["validate", "--script", script, "--duration", duration_sec]
+        if source_text:
+            source = Path(tmp) / "source.txt"
+            source.write_text(source_text, encoding="utf-8")
+            args += ["--source-file", source]
+        return _studio("ags_vi_script.py", *args)
+
+
+@mcp.tool()
+def ags_studio_hook(spoken: str = "", on_screen: str = "") -> dict:
+    """Chấm câu mở đầu: lời nói ≤ 14 từ, chữ trên hình ≤ 8 từ, có số/câu hỏi/nghịch lý/cảnh báo/trước–sau/POV, không mở
+    bằng lời chào. Chưa đạt → E-ags-video-studio-10x-012. spoken trống → trả thư viện 8 loại câu mở để agent viết."""
+    args: List[object] = ["hook"] + (["--spoken", spoken] if spoken else []) + (["--on-screen", on_screen] if on_screen else [])
+    return _studio("ags_vi_script.py", *args)
+
+
+@mcp.tool()
+def ags_studio_claims(script: str, claims: List[Dict[str, str]]) -> dict:
+    """Không bịa kết quả của khách: claims = [{"text": "50 triệu", "claim_source": "khach-nhap" | "tai-lieu:<tên>" | "vi-du"}].
+    Số kết quả cá nhân không có nguồn → E-ags-video-studio-10x-013; 'vi-du' → nhãn "ví dụ" trên video."""
+    with tempfile.TemporaryDirectory(prefix="ags_studio_") as tmp:
+        claims_file = Path(tmp) / "claims.json"
+        claims_file.write_text(json.dumps(claims, ensure_ascii=False), encoding="utf-8")
+        return _studio("ags_vi_script.py", "claims", "--script", script, "--claims-file", claims_file)
+
+
+@mcp.tool()
+def ags_studio_profile(samples: List[str]) -> dict:
+    """Hiệu chỉnh theo 1–5 mẫu thật của khách (link http(s) công khai hoặc đoạn văn): chỉ đo số từ/giây, độ dài câu, loại câu
+    mở, số ý — không tải hay dùng lại hình/tiếng gốc."""
+    return _studio("ags_vi_script.py", "profile", *[part for sample in samples for part in ("--sample", sample)])
 
 
 if __name__ == "__main__":

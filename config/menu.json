@@ -1,0 +1,60 @@
+{
+  "_huong_dan": "Người bán sửa được. items = bảng chọn món (mỗi dòng 1 câu mẫu khách nói). presets = kiểu video: label là tên hiện cho khách, aliases là các cụm chữ khách hay nói để nhận ra kiểu, voice_style là chỉ dẫn giọng cho Google AI, image_style là khung phong cách ảnh AI giữ cố định trong cả video.",
+  "presets": {
+    "business-thinking-60s": {
+      "label": "Business Thinking 60 giây",
+      "aliases": ["business thinking", "tư duy kinh doanh", "năm kinh nghiệm", "năm kinh doanh", "bài học kinh doanh"],
+      "duration_sec": 60,
+      "archetype": "auto",
+      "file_prefix": "bt",
+      "voice_style": "đanh, chắc, nhấn con số, nhịp nhanh vừa",
+      "image_style": "minimal luxury editorial still, one subject, visual metaphor, flat single-colour background, empty top and bottom thirds for captions"
+    },
+    "jetlag-vi": {
+      "label": "Kể chuyện – giải thích (Jetlag Việt hoá)",
+      "aliases": ["jetlag", "kể chuyện", "giải thích", "thế giới vận hành", "vì sao"],
+      "duration_sec": 60,
+      "archetype": "auto",
+      "file_prefix": "jetlag",
+      "voice_style": "kể chuyện tò mò, rõ ràng, nhịp vừa, nhấn số liệu và địa danh",
+      "image_style": "clean explainer illustration, map or diagram feel, one focal subject, soft flat background, empty top and bottom thirds for captions"
+    },
+    "bds": {
+      "label": "Bất động sản",
+      "aliases": ["bất động sản", "bđs", "căn hộ", "đất nền", "nhà phố", "dự án"],
+      "duration_sec": 45,
+      "archetype": "blender_3d_bds",
+      "file_prefix": "bds",
+      "voice_style": "tự tin, ấm, rõ vị trí và giá, nhịp vừa",
+      "image_style": "bright tropical-sun photo set in Vietnam: Vietnamese rice fields, rural roads, canals, narrow Vietnamese tube houses (nhà phố) and Vietnamese new urban areas, one building or plot as subject, clean sky, empty top and bottom thirds for captions; no European or Mediterranean architecture, villas, coastline or landscapes"
+    },
+    "editorial": {
+      "label": "Tạp chí sang trọng",
+      "aliases": ["editorial", "tạp chí", "sang trọng", "sang chảnh"],
+      "duration_sec": 45,
+      "archetype": "editorial_grid",
+      "file_prefix": "editorial",
+      "voice_style": "nhẹ nhàng, sang, chậm rãi, rõ chữ",
+      "image_style": "high-end magazine still life, one product or subject, soft daylight, single-colour backdrop, empty top and bottom thirds for captions"
+    },
+    "isometric-3d": {
+      "label": "Mô hình 3D",
+      "aliases": ["isometric", "3d", "mô hình", "quy trình"],
+      "duration_sec": 45,
+      "archetype": "blender_3d_isometric",
+      "file_prefix": "iso3d",
+      "voice_style": "rõ ràng, mạch lạc, nhịp vừa, nhấn từng bước",
+      "image_style": "isometric 3D diagram, one system as subject, pastel flat background, empty top and bottom thirds for captions"
+    }
+  },
+  "items": [
+    {"nganh": "Bất động sản", "muon_gi": "Giới thiệu căn hộ, lô đất", "cau_mau": "Làm video về căn hộ 2 phòng ngủ ở Thủ Đức, kiểu bất động sản", "ra_gi": "Video dọc 45 giây có mô hình khu đất, phụ đề và ảnh lưới duyệt", "preset": "bds"},
+    {"nganh": "Quán ăn, cà phê (F&B)", "muon_gi": "Khoe món mới, kéo khách tới quán", "cau_mau": "Làm video về món cà phê muối của quán em, kiểu tạp chí", "ra_gi": "Video dọc 45 giây sang trọng kiểu tạp chí, chữ to dễ đọc", "preset": "editorial"},
+    {"nganh": "Giáo dục, khoá học", "muon_gi": "Giải thích 1 kiến thức để kéo học viên", "cau_mau": "Làm video về vì sao học tiếng Anh mãi không nói được, kiểu kể chuyện", "ra_gi": "Video dọc 60 giây kể chuyện – giải thích có số liệu", "preset": "jetlag-vi"},
+    {"nganh": "Y tế, làm đẹp", "muon_gi": "Giới thiệu dịch vụ spa, nha khoa", "cau_mau": "Làm video về liệu trình chăm sóc da sau sinh, kiểu tạp chí", "ra_gi": "Video dọc 45 giây nhẹ nhàng, không hứa hẹn kết quả", "preset": "editorial"},
+    {"nganh": "Bán hàng online (TMĐT)", "muon_gi": "Giới thiệu sản phẩm, quy trình giao hàng", "cau_mau": "Làm video về quy trình đóng gói đơn hàng của shop, kiểu mô hình 3D", "ra_gi": "Video dọc 45 giây mô hình 3D từng bước", "preset": "isometric-3d"},
+    {"nganh": "Tư duy kinh doanh", "muon_gi": "Chia sẻ bài học kinh doanh ngắn gọn", "cau_mau": "Làm video 30 năm tư duy kinh doanh trong 60 giây về dòng tiền, kiểu Business Thinking", "ra_gi": "Video dọc 60 giây, 5–7 ý ngắn, từ khoá tô màu", "preset": "business-thinking-60s"},
+    {"nganh": "Du lịch", "muon_gi": "Kể chuyện điểm đến, tour", "cau_mau": "Làm video về vì sao Phú Quý đông khách mùa hè, kiểu kể chuyện", "ra_gi": "Video dọc 60 giây kể chuyện có bản đồ, con số", "preset": "jetlag-vi"},
+    {"nganh": "Dịch vụ doanh nghiệp (B2B)", "muon_gi": "Giải thích dịch vụ cho chủ doanh nghiệp", "cau_mau": "Làm video về 5 bài học giữ chân khách hàng doanh nghiệp, kiểu tư duy kinh doanh", "ra_gi": "Video dọc 60 giây, giọng chắc, ý ngắn", "preset": "business-thinking-60s"}
+  ]
+}

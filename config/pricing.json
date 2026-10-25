@@ -1,0 +1,6 @@
+{
+  "_huong_dan": "Người bán điền đơn giá bằng VND (số nguyên). Để null nghĩa là chưa có giá: báo cho khách 'chưa có bảng giá' và vẫn chờ khách đồng ý trước khi chạy. Tổng tiền luôn làm tròn lên 1.000 đ. Giọng miễn phí trên máy và hình dự phòng/miễn phí = 0 đồng.",
+  "image_ai_vnd": null,
+  "gemini_tts_vnd_per_1000_chars": null,
+  "render_minutes_per_video_minute": 3
+}

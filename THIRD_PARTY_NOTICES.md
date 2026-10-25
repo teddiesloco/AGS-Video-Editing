@@ -26,6 +26,7 @@ Internet ở lần dùng đầu, **không kèm trong gói**.
 | Model [YuNet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet) `face_detection_yunet_2023mar.onnx` | Dò khuôn mặt cho reframe; tự tải từ opencv_zoo khi chạy lần đầu, kiểm SHA-256 | MIT |
 | [Pillow](https://github.com/python-pillow/Pillow/blob/main/LICENSE) | Vẽ chữ, card, ảnh BĐS | MIT-CMU (HPND) |
 | [NumPy](https://numpy.org/doc/stable/license.html) | Xử lý mảng audio/khung hình | BSD-3-Clause |
+| [cryptography](https://github.com/pyca/cryptography/blob/main/LICENSE) | Giải mã vault tài nguyên (AES-256-GCM) trong gói đã đóng | Apache-2.0 OR BSD-3-Clause |
 | [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) (`mcp`) | MCP server | MIT |
 | Thư viện phụ trợ kéo theo khi cài `venv/` (`huggingface_hub`, `scipy`, `scikit-image`, `pymatting`, `librosa`, `pydub`, `kaldi-native-fbank`, `sea-g2p`, `soxr`, `certifi`, `orjson`, `tqdm`) | Tải model, xử lý tín hiệu âm thanh/ảnh trong `rembg` và `vieneu` | Apache-2.0 / MIT / BSD-3-Clause / ISC / MPL-2.0 (`certifi`, `orjson`, `tqdm`) / LGPL-2.1+ (`soxr`, nạp động qua wheel) |
 

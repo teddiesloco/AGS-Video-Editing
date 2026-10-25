@@ -12,8 +12,8 @@ CẢNH BÁO — exit 2, phải đọc và xử lý trước khi bàn giao:
   - Đoạn đen >= 0.5 s; đoạn đứng hình >= 5 s; khoảng lặng (dead air, dưới -50 dBFS) >= 2 s.
 ĐẠT — exit 0: không lỗi, không cảnh báo.
 
---contact-sheet <ảnh.jpg> [--frames N]: xuất ảnh lưới N khung (khung 0 + rải đều cả video) có ghi mốc thời gian, để model
-thị giác tự soát; video dọc có viền hồng đánh dấu vùng an toàn (ags_common.safe_box).
+--contact-sheet <ảnh.jpg> [--frames N] [--debug-zones]: xuất ảnh lưới N khung (khung 0 + rải đều cả video) có ghi mốc
+thời gian, để model thị giác tự soát; --debug-zones vẽ thêm viền hồng vùng an toàn (ags_common.safe_box) cho video dọc.
 Vòng render → lấy mẫu → soát → sửa: harness/QUY-TRINH-KIEM-DINH.md.
 """
 
@@ -156,8 +156,9 @@ class AntiSlopGuard:
             else:
                 self.ok.append(f"True peak {true_peak} dBTP (trần {TRUE_PEAK_MAX}).")
 
-    def contact_sheet(self, output_path, frames=12):
-        """Ảnh lưới `frames` khung: khung 0 rồi rải đều tới cuối video, mỗi khung ghi mốc thời gian."""
+    def contact_sheet(self, output_path, frames=12, debug_zones=False):
+        """Ảnh lưới `frames` khung: khung 0 rồi rải đều tới cuối video, mỗi khung ghi mốc thời gian.
+        debug_zones: vẽ viền hồng vùng an toàn (chỉ để soát nội bộ; bản gửi khách không có)."""
         frames = max(1, frames)
         width, height = self.size
         vertical = height >= 1.6 * width
@@ -181,7 +182,7 @@ class AntiSlopGuard:
             if png:
                 with Image.open(io.BytesIO(png)) as im:
                     sheet.paste(im.convert("RGB").resize((tile_w, tile_h), Image.LANCZOS), (left, top))
-            if vertical:
+            if vertical and debug_zones:
                 draw.rectangle([left + x0 * scale, top + y0 * scale, left + x1 * scale, top + y1 * scale],
                                outline=SAFE_ZONE_COLOR, width=2)
             draw.text((left + 8, top + tile_h + 6), f"#{k}  t={t:.2f}s" + ("  (khung 0)" if k == 0 else ""),
@@ -191,14 +192,15 @@ class AntiSlopGuard:
         sheet.save(out, "JPEG", quality=90)
         return out
 
-    def run_full_guard(self, contact_sheet=None, frames=12):
+    def run_full_guard(self, contact_sheet=None, frames=12, debug_zones=False):
         print(f"[*] Đang chạy Anti-AI-Slop Guard trên: {self.video_path.name}")
         if self.check_streams():
             self.check_video()
             if self.measures.get("has_audio"):
                 self.check_audio()
             if contact_sheet:
-                print(f"[*] Contact sheet ({frames} khung): {self.contact_sheet(contact_sheet, frames)}")
+                sheet = self.contact_sheet(contact_sheet, frames, debug_zones)
+                print(f"[*] Contact sheet ({frames} khung): {sheet}")
         for line in self.ok:
             print(f"[OK] {line}")
         summary = {"duration": round(self.duration, 2), **{k: v for k, v in self.measures.items() if k != "has_audio"}}
@@ -222,5 +224,6 @@ if __name__ == "__main__":
     parser.add_argument("video", help="Đường dẫn video cần kiểm định")
     parser.add_argument("--contact-sheet", metavar="ANH.jpg", help="Xuất ảnh lưới khung hình để soát bằng mắt / model thị giác")
     parser.add_argument("--frames", type=int, default=12, help="Số khung trong contact sheet (mặc định 12, gồm khung 0)")
+    parser.add_argument("--debug-zones", action="store_true", help="Vẽ viền hồng vùng an toàn lên contact sheet (soát nội bộ)")
     args = parser.parse_args()
-    sys.exit(AntiSlopGuard(args.video).run_full_guard(args.contact_sheet, args.frames))
+    sys.exit(AntiSlopGuard(args.video).run_full_guard(args.contact_sheet, args.frames, args.debug_zones))

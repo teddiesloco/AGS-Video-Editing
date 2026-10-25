@@ -33,7 +33,7 @@ GUARD = ROOT / "harness" / "ags_anti_slop_guard.py"
 
 
 def test_safe_zone_and_nfc():
-    assert safe_box(1080, 1920) == (120, 288, 780, 1248), safe_box(1080, 1920)
+    assert safe_box(1080, 1920) == (200, 288, 880, 1248), safe_box(1080, 1920)  # đối xứng: tâm hộp chữ x = 540
     assert safe_box(1920, 1080) == (154, 86, 1766, 994), safe_box(1920, 1080)
     decomposed = unicodedata.normalize("NFD", "Tiếng Việt đẹp")
     assert decomposed != "Tiếng Việt đẹp" and nfc(decomposed) == "Tiếng Việt đẹp"
@@ -166,6 +166,35 @@ def test_caption_render_is_large_enough(tmp):
         assert xs.min() >= x0 and xs.max() < x1 and ys.min() >= y0 and ys.max() < y1, style
         # Một dòng thu nhỏ theo bề ngang cao khoảng 35 px; xuống dòng ở cỡ chữ thật thì khối chữ cao hơn 1,5 lần cỡ chữ tối thiểu
         assert ys.max() - ys.min() >= 1.5 * 0.05 * 1080, (style, int(ys.max() - ys.min()))
+
+
+def test_bt_vi_centered_large_with_example_label(tmp):
+    """BR-006/FR-012 (24/10): vùng an toàn đối xứng → hook và phụ đề bt_vi căn giữa x = 540; hook ≥ 72 px (ưu tiên 84),
+    phụ đề 72 px khi vừa 2 dòng; nhãn "ví dụ" ≥ 40 px đứng đầu cụm phụ đề có số minh hoạ."""
+    from ags_editorial_sub import subtitles_filter
+    words = timed("Một ly cà phê 35k bằng con số ví dụ", 0.4)
+    ass = tmp / "btvi.ass"
+    fonts = write_ass([words], ass, 1080, 1920, "bt_vi", hook=("30 năm kinh doanh trong 60 giây", 2.5),
+                      label="ví dụ", label_terms=["35k"])
+    bodies = dialogue_bodies(ass.read_text(encoding="utf-8"))
+    sizes = [int(re.match(r"\{\\q2\\fs(\d+)", b).group(1)) for b in bodies]
+    assert sizes[0] >= 72 and sizes[1:] == [72] * (len(bodies) - 1), sizes
+    tagged = [b for b in bodies[1:] if "(ví dụ)" in b]
+    assert len(tagged) == 1 and "35k" in tagged[0] and re.search(r"\\fs(\d+)[^}]*\}\(ví dụ\)", tagged[0]), bodies
+    assert int(re.search(r"\\fs(\d+)[^}]*\}\(ví dụ\)", tagged[0]).group(1)) >= 40
+    for t in (0.2, 0.9):  # khung có hook + cụm đầu; khung có cụm mang nhãn
+        image = tmp / f"btvi_{t}.png"
+        ffmpeg("-f", "lavfi", "-i", "color=0x444444:s=1080x1920:d=1", "-vf",
+               f"setpts=PTS+{t}/TB,{subtitles_filter(ass, fonts)}", "-frames:v", "1", image)
+        pixels = np.asarray(Image.open(image).convert("RGB"))
+        x0, y0, x1, y1 = safe_box(1080, 1920)
+        for top, bottom in ((0, 1920 // 2), (1920 // 2, 1920)):  # hook ở nửa trên, phụ đề ở nửa dưới: từng khối căn giữa
+            band = pixels[top:bottom]
+            ys, xs = np.where(np.max(np.abs(band.astype(int) - band[0, 0].astype(int)), axis=2) > 10)
+            if not xs.size:
+                continue
+            assert xs.min() >= x0 and xs.max() < x1 and ys.min() + top >= y0 and ys.max() + top < y1, (t, top)
+            assert abs((xs.min() + xs.max()) / 2 - 540) <= 12, (t, top, int(xs.min()), int(xs.max()))
 
 
 def test_script_alignment_keeps_exact_words():
@@ -302,6 +331,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="ags_test_core_") as tmp:
         tmp = Path(tmp)
         steps = [
+            ("Phụ đề bt_vi: căn giữa, chữ to, nhãn ví dụ", lambda: test_bt_vi_centered_large_with_example_label(tmp)),
             ("Vùng an toàn 9:16 + NFC", test_safe_zone_and_nfc),
             ("Cắt lặng: lập kế hoạch + crossfade không lách cách", test_cut_planning_and_crossfade),
             ("Phụ đề .ASS: karaoke, từ khoá, hook khung 0", lambda: test_ass_karaoke_and_hook(tmp)),

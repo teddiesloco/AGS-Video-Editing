@@ -1,0 +1,96 @@
+{
+  "_ghi_chu": "Thư viện 8 loại hook tiếng Việt (FR-018). Người bán sửa được. Khung có chỗ trống {…}; ví dụ KHÔNG chứa số liệu cá nhân thật (BR-012): số kết quả của khách chỉ điền khi khách đưa số (claim_source) hoặc ghi rõ 'ví dụ'. Chấm hook: python scripts/ags_vi_script.py hook --spoken \"…\" [--on-screen \"…\"] --json.",
+  "rules": {
+    "spoken_max_words": 14,
+    "on_screen_max_words": 8,
+    "show_within_sec": 1.0,
+    "max_hook_sec": 5,
+    "series_rotation_min_types": 3,
+    "must_have_one_of": ["con-so", "cau-hoi", "nghich-ly", "canh-bao", "pov", "truoc-sau"],
+    "forbidden_openings": ["lời chào", "giới thiệu bản thân", "logo/intro"]
+  },
+  "types": [
+    {
+      "id": "noi-dau",
+      "label": "Đánh thẳng nỗi đau",
+      "frame": "{Làm đúng việc khách hay làm} mà vẫn {kết quả tệ khách sợ}?",
+      "examples": [
+        "Đông khách mà cuối tháng vẫn hết tiền?",
+        "Đăng bài mỗi ngày, vẫn không ai mua?",
+        "Làm từ sáng tới khuya, sao vẫn nghèo?"
+      ]
+    },
+    {
+      "id": "nghich-ly",
+      "label": "Nghịch lý / sự thật gây sốc",
+      "frame": "{Điều ai cũng tin} thật ra đang {hại người xem}.",
+      "examples": [
+        "Bán rẻ thật ra đang giết quán bạn.",
+        "Càng chăm chỉ, doanh nghiệp càng dễ chết.",
+        "Sự thật: khách ít khi mua vì giá."
+      ]
+    },
+    {
+      "id": "ket-qua",
+      "label": "Hứa kết quả cụ thể",
+      "frame": "{Số} bước để {kết quả đo được} trong {thời gian}.",
+      "claim_note": "Con số kết quả của chính khách phải có claim_source (khách nhập / tài liệu) hoặc nhãn 'ví dụ'.",
+      "examples": [
+        "3 bước để quán vắng có khách lại.",
+        "5 câu chốt đơn qua tin nhắn Zalo.",
+        "Trả lời 100 tin nhắn trong 10 phút."
+      ]
+    },
+    {
+      "id": "cau-hoi",
+      "label": "Câu hỏi mở",
+      "frame": "Vì sao {điều lạ người xem từng thấy}?",
+      "examples": [
+        "Vì sao quán đẹp vẫn đóng cửa?",
+        "Bao nhiêu khách thì quán mới có lãi?",
+        "Có nên giảm giá khi quán vắng?"
+      ]
+    },
+    {
+      "id": "canh-bao",
+      "label": "Cảnh báo (sợ mất)",
+      "frame": "Đừng {làm việc X} khi chưa {biết điều Y}.",
+      "examples": [
+        "Đừng mở quán khi chưa tính hoà vốn.",
+        "Sai lầm này khiến cửa hàng mất khách.",
+        "Cẩn thận với khách chỉ hỏi giá."
+      ]
+    },
+    {
+      "id": "truoc-sau",
+      "label": "Trước – sau",
+      "frame": "Trước {tình trạng cũ}, sau {thay đổi} thì sao?",
+      "claim_note": "Số trước–sau phải là số của khách (claim_source) hoặc ghi 'ví dụ'.",
+      "examples": [
+        "Trước vắng tanh, sau đổi menu thì sao?",
+        "Trước và sau khi chụp nhà đúng cách.",
+        "Một menu, trước và sau khi đổi tên."
+      ]
+    },
+    {
+      "id": "pov",
+      "label": "POV – đặt người xem vào tình huống",
+      "frame": "POV: {bạn là ai} và {chuyện vừa xảy ra}.",
+      "examples": [
+        "POV: bạn là chủ quán ngày mưa.",
+        "POV: khách hỏi giá rồi im lặng.",
+        "POV: bạn vừa nhận đơn hoàn thứ ba."
+      ]
+    },
+    {
+      "id": "nua-cau",
+      "label": "Nửa câu / preview-flash",
+      "frame": "{Nửa đầu câu gây tò mò}… (cắt, hiện cảnh đắt nhất 0,5–1 giây rồi vào thân bài)",
+      "examples": [
+        "Sự thật đằng sau những quán đông khách…",
+        "Nhưng chuyện xảy ra sau đó mới sợ…",
+        "Khách hỏi đúng 1 câu rồi bỏ đi…"
+      ]
+    }
+  ]
+}

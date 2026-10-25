@@ -1,11 +1,32 @@
 ---
 name: ags-video-editing
-description: "AGS (Agent Space) — bộ 9 skill edit video tự động bằng Python + FFmpeg chạy trên máy người dùng (macOS, Linux, Windows): cắt lặng & từ đệm, chữ chìm sau người, phụ đề tạp chí/karaoke -14 LUFS, ghi âm thành chữ 2D hoặc người que, reframe ngang → dọc 9:16 bám mặt, video dài → nhiều short, video Bất Động Sản, giọng đọc tiếng Việt cục bộ (VieNeu, ZeroTTS) + hiệu ứng âm thanh CC0, kèm harness kiểm định. Tự dựng môi trường lần đầu. Dùng khi người dùng muốn dựng, cắt, làm phụ đề, làm short/reels, lồng tiếng hoặc kiểm tra chất lượng video."
+description: "AGS (Agent Space) — bộ 10 skill dựng/edit video tự động bằng Python + FFmpeg chạy trên máy người dùng (macOS, Linux, Windows). AGS Video Studio: khách nói 1 câu lời thường theo bảng chọn món (BĐS, F&B, giáo dục, làm đẹp, bán hàng online, 30 năm tư duy kinh doanh trong 60 giây, giải thích kiểu Jetlag Việt hoá, du lịch, B2B), agent hỏi ngược 3 câu, báo chi phí VND, chờ 'chạy' rồi ra video 9:16 + ảnh lưới để duyệt và sửa bằng lời. Kèm: cắt lặng & từ đệm, chữ chìm sau người, phụ đề karaoke -14 LUFS, ghi âm thành chữ 2D/người que, reframe 9:16 bám mặt, video dài → short, video BĐS, giọng đọc tiếng Việt (cục bộ hoặc Google AI) + SFX CC0, harness kiểm định. Dùng khi người dùng muốn làm video, reels, short, phụ đề, lồng tiếng hoặc kiểm tra chất lượng video."
 compatibility: "Chạy cục bộ: Claude Code, Google Antigravity, Codex, Gemini CLI, Cursor. Cần Python 3.11 (3.12 được phép) và FFmpeg; installer tự tạo venv trong thư mục skill. Lần đầu cần Internet để cài thư viện và tải model. KHÔNG chạy được render trong claude.ai / ChatGPT web."
 license: "PolyForm Strict 1.0.0 — xem LICENSE"
 ---
 
-# AGS Video Editing — Bộ Skill Edit Video Tự Động của AGS (Agent Space)
+# AGS Video Editing — Bộ Skill Dựng Video Tự Động của AGS (Agent Space)
+
+## Bảng chọn món — Anh/chị muốn gì → nói câu nào → ra gì
+Khách nói theo bảng này (hoặc chỉ nói "làm video cho ngành em") → **đọc và làm đúng `skills/ags-studio/SKILL.md`**:
+hỏi ngược đúng 3 câu (bỏ câu khách đã nói), báo chi phí bằng VND, CHỜ khách nói "chạy", đưa ảnh lưới để duyệt.
+
+| Anh/chị muốn gì | Nói câu nào (sửa chữ trong ngoặc) | Ra gì |
+|---|---|---|
+| Bất động sản — giới thiệu lô đất, căn hộ | "Làm video 45 giây giới thiệu (lô đất 5x20 ở Long An) từ ảnh em gửi, giọng miễn phí." | Video dọc có ảnh/clip của anh/chị, khung lô đất, chữ thông tin, giọng đọc, phụ đề |
+| Quán ăn, đồ uống (F&B) | "Làm video 30 giây giới thiệu (món bún bò mới) của quán, giọng Google AI." | Video dọc ảnh món ăn có chuyển động, câu mở hút mắt, lời mời ghé quán |
+| Giáo dục, khoá học | "Làm video 45 giây giải thích (vì sao học tiếng Anh mãi chưa nói được)." | Video giảng giải ngắn, mỗi ý một hình, từ khoá tô màu |
+| Y tế – làm đẹp (phòng khám, spa) | "Làm video 30 giây chia sẻ (3 sai lầm khi chăm da mùa nắng) cho spa." | Video lời khuyên, giọng ấm, phụ đề rõ, không hứa hiệu quả chữa trị |
+| Bán hàng online (thương mại điện tử) | "Làm video 30 giây giới thiệu (bình giữ nhiệt mới), nhấn giá và ưu đãi em đưa." | Video sản phẩm, giá/ưu đãi tô màu nổi, lời mời đặt hàng nhẹ nhàng |
+| Tư duy kinh doanh — "30 năm trong 60 giây" | "Làm video 30 năm tư duy kinh doanh trong 60 giây về (dòng tiền), kiểu Business Thinking." | 60 giây: câu mở ≤ 8 chữ + 5–7 nguyên tắc ngắn + câu kết, Việt hoá 100% |
+| Giải thích kiểu Jetlag, Việt hoá | "Làm video kiểu Jetlag Việt hoá giải thích (vì sao cà phê Việt xuất khẩu nhiều mà giá rẻ)." | 45–75 giây kể chuyện – giải thích có con số, ví dụ và tiền tệ Việt Nam |
+| Du lịch, điểm đến | "Làm video 45 giây kể chuyện (vì sao Phú Quý ngày càng đông khách)." | Video kể chuyện điểm đến, có bản đồ/con số anh/chị cung cấp |
+| Dịch vụ cho doanh nghiệp (B2B) | "Làm video 45 giây giải thích (quy trình 3 bước làm kế toán thuê) bằng sơ đồ 3D." | Video sơ đồ khối 3D: đầu vào → xử lý → kết quả |
+
+Mọi món đều ra **video dọc 9:16 đăng Reels/TikTok/Shorts + ảnh lưới 12 khung** để duyệt bằng mắt; sửa bằng lời thường
+(*"đổi sub sang vàng"*, *"đọc chậm lại"*, *"đổi cảnh 3"*, *"làm 3 bản thử câu mở đầu"*). "Business Thinking", "Jetlag" chỉ là
+tên thể loại: học cách kể, không dùng hình/tiếng/chữ của các kênh đó. Không hứa thu nhập hay lượt xem; không bịa số liệu
+kết quả của khách.
 
 Người dùng chỉ cần nói việc họ muốn (ví dụ *"cắt lặng video này rồi làm phụ đề karaoke"*). **Bạn (agent) lo môi trường.**
 Không hỏi người dùng về Python, venv, pip hay đường dẫn.
@@ -35,7 +56,11 @@ bash "SKILL_DIR/CAI-DAT-MAC.sh" --yes          # macOS / Linux
 - Installer chỉ ghi vào `SKILL_DIR/venv` và cấu hình MCP trong `SKILL_DIR`. Dời/đổi tên thư mục skill → chạy lại installer.
 - Windows vừa cài FFmpeg bằng winget mà `--check` vẫn không thấy: mở terminal mới rồi chạy lại.
 
-## 3. 9 skill (chi tiết trong `skills/<tên>/SKILL.md` — đọc file đó trước khi chạy)
+## 3. 10 skill (chi tiết trong `skills/<tên>/SKILL.md` — đọc file đó trước khi chạy)
+0. **ags-studio** — `python scripts/ags_studio.py intake|quote|run|revise|variants|menu ... --json` và
+   `python scripts/ags_vi_script.py validate|hook|claims|profile ... --json` — khách nói 1 câu → hỏi ngược 3 câu → kịch bản
+   Việt hoá qua `validate` → báo chi phí VND → chờ "chạy" → video 9:16 + ảnh lưới → sửa bằng lời. Mặc định cho mọi yêu cầu
+   "làm video cho ngành/chủ đề X" chưa nói rõ cách dựng.
 1. **ags-edit-az** — `python scripts/ags_cut_silence.py <video>` — bỏ khoảng lặng (đo độ to) và từ đệm, crossfade tiếng, -14 LUFS.
 2. **ags-edit-hook** — `python scripts/ags_text_behind_person.py <video> --text "<HOOK>"` — câu hook chìm sau lưng người nói.
 3. **ags-edit-editorial** — `python scripts/ags_editorial_sub.py <video> [--style karaoke]` — phụ đề tạp chí/karaoke trong

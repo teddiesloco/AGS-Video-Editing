@@ -1,15 +1,32 @@
 #!/usr/bin/env bash
 # AGS Video Editing — cài môi trường cho macOS / Linux.
-#   ./CAI-DAT-MAC.sh            cài đầy đủ: lõi + MCP + cả hai giọng đọc cục bộ (VieNeu, ZeroTTS) + SFX
+#   ./CAI-DAT-MAC.sh            cài đầy đủ: lõi + MCP + cả hai giọng đọc cục bộ (VieNeu, ZeroTTS) + SFX, rồi đăng ký
+#                               3 MCP + skill vào Antigravity/Gemini, Claude Code, Codex, Cursor (--install-all-clients)
 #   ./CAI-DAT-MAC.sh --core     không cài thư viện TTS
 #   ./CAI-DAT-MAC.sh --yes      được phép tự cài Python 3.11 / FFmpeg còn thiếu (Homebrew hoặc uv)
-# Mọi tuỳ chọn khác chuyển thẳng cho scripts/ags_setup.py (--check, --warmup-tts, --print-mcp, …).
+#   ./CAI-DAT-MAC.sh --activate <TOKEN>   cài như trên + kích hoạt bản quyền (--targets/--home cũng chuyển cho bước client)
+#   ./CAI-DAT-MAC.sh --no-configs         cài môi trường, không ghi cấu hình MCP nào
+# Lệnh đơn (--check, --warmup-tts, --print-mcp, --install-all-clients, …) chuyển nguyên cho scripts/ags_setup.py.
 # Chạy được từ bất kỳ thư mục nào, kể cả đường dẫn có dấu cách. Đặt AGS_PYTHON để chỉ định Python 3.11/3.12.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ASSUME_YES=0
-for arg in "$@"; do
-    if [[ "$arg" == "--yes" || "$arg" == "-y" ]]; then ASSUME_YES=1; fi
+ACTION=0
+SKIP_CLIENTS=0
+INSTALL_ARGS=()
+CLIENT_ARGS=(--install-all-clients)
+ARGS=("$@")
+i=0
+while [[ $i -lt ${#ARGS[@]} ]]; do
+    arg="${ARGS[$i]}"
+    case "$arg" in
+        --activate|--targets|--home) CLIENT_ARGS+=("$arg" "${ARGS[$((i + 1))]:-}"); i=$((i + 2)); continue ;;
+        --yes|-y) ASSUME_YES=1 ;;
+        --no-configs) SKIP_CLIENTS=1 ;;
+        --check|--warmup-tts|--print-mcp|--register-claude-code|--machine-id|--license-status|--install-all-clients|-h|--help)
+            ACTION=1 ;;
+    esac
+    INSTALL_ARGS+=("$arg"); i=$((i + 1))
 done
 
 supported() {
@@ -59,4 +76,9 @@ if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; 
     fi
 fi
 
-exec "$PYTHON" "$ROOT/scripts/ags_setup.py" "$@"
+if [[ $ACTION -eq 1 ]]; then
+    exec "$PYTHON" "$ROOT/scripts/ags_setup.py" "$@"
+fi
+"$PYTHON" "$ROOT/scripts/ags_setup.py" ${INSTALL_ARGS[@]+"${INSTALL_ARGS[@]}"}
+if [[ $SKIP_CLIENTS -eq 1 ]]; then exit 0; fi
+exec "$ROOT/venv/bin/python" "$ROOT/scripts/ags_setup.py" "${CLIENT_ARGS[@]}"

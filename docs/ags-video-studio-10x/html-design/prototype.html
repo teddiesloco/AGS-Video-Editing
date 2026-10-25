@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AGS Video Studio 10x</title>
+<style>
+:root{--paper:#f4f4ef;--ink:#0e1116;--signal:#1f6f3d;--neon:#a8ff3e}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Be Vietnam Pro",system-ui,sans-serif}
+h1{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0 0 8px}
+main{max-width:1200px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:1fr 1fr}
+nav{padding:8px 16px}nav button{margin-right:8px}
+section{background:#fff;border:1px solid #dcdcd2;border-radius:12px;padding:16px}
+.full{grid-column:1/-1}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.grid div{aspect-ratio:9/16;background:#e4e4da;border-radius:6px}
+button.primary{background:var(--signal);color:#fff;border:0;border-radius:8px;padding:12px 20px;min-height:44px}
+.err{background:#fde8e8;border:1px solid #c0392b;padding:12px;border-radius:8px}
+[data-view]{display:none}body[data-state=loading] [data-view=loading],body[data-state=empty] [data-view=empty],body[data-state=error] [data-view=error],body[data-state=populated] [data-view=populated]{display:block}
+@media(max-width:1279px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:767px){main{grid-template-columns:1fr}.grid{grid-template-columns:repeat(3,1fr)}button.primary{width:100%}}
+</style></head>
+<body data-state="populated">
+<nav><button data-state="loading">Loading</button><button data-state="empty">Empty</button>
+<button data-state="error">Error</button><button data-state="populated">Populated</button></nav>
+<div data-view="error" class="err" role="alert">E-ags-video-studio-10x-007: Chưa có khoá Google AI — chọn giọng miễn phí hoặc dán khoá. <button>Thử lại</button></div>
+<main>
+<section class="full"><h1 data-testid="ags-vs-title">AGS Video Studio — Anh/chị muốn làm video gì?</h1>
+<ul data-testid="ags-vs-menu"><li>BĐS</li><li>F&amp;B</li><li>Giáo dục</li><li>Làm đẹp</li><li>Thương mại điện tử</li><li>Business Thinking</li><li>Jetlag</li><li>Dịch vụ B2B</li></ul></section>
+<section>
+<div data-view="loading">Em đang dựng… 40%</div>
+<div data-view="empty">Anh/chị gõ 1 câu là em bắt đầu.</div>
+<div data-view="populated">
+<div data-testid="ags-vs-question"><b>Câu 2/3:</b> Phong cách mẫu nào? <label><input type="radio" name="q" checked> Business Thinking</label> <label><input type="radio" name="q"> Jetlag</label></div>
+<div data-testid="ags-vs-voice"><label><input type="radio" name="v" checked> Miễn phí trên máy</label> <label><input type="radio" name="v"> Google AI / Gemini</label></div>
+<p>Chi phí ước tính: <b>0 đ</b></p><button class="primary" data-testid="ags-vs-quote-run">Chạy</button></div>
+</section>
+<section>
+<div data-view="loading">Đang tạo ảnh lưới…</div>
+<div data-view="empty">Chưa có video.</div>
+<div data-view="populated"><div class="grid" data-testid="ags-vs-contact-sheet"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+<p><input data-testid="ags-vs-revise" placeholder="Ví dụ: đổi màu sub sang vàng"> <button>Sửa</button></p></div>
+</section>
+<section class="full"><div data-view="populated"><a data-testid="ags-vs-result" href="#">ags-bt-30nam.mp4</a></div></section>
+</main>
+<script>document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>document.body.dataset.state=b.dataset.state)</script>
+</body></html>

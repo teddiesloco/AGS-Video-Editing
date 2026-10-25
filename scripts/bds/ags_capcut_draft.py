@@ -5,11 +5,13 @@ Draft gồm 3 file trong 1 thư mục:
 - draft_info.json     : timeline (tên file CapCut macOS đọc)
 - draft_content.json  : cùng nội dung (tên file CapCut Windows đọc)
 - draft_meta_info.json: thông tin thư mục, danh sách media
-Khung trường lấy từ ags_capcut_template.json (bộ key + giá trị mặc định quan sát từ draft CapCut thật,
-version 360000). Thời gian tính bằng micro-giây. Không bao giờ ghi đè thư mục đã tồn tại.
+Khung trường lấy từ ags_capcut_template.json qua ags_vault_loader.read_asset (gói đã đóng: nằm trong vault) —
+bộ key + giá trị mặc định quan sát từ draft CapCut thật, version 360000. Thời gian tính bằng micro-giây.
+Không bao giờ ghi đè thư mục đã tồn tại.
 """
 
 import copy
+import functools
 import json
 import os
 import sys
@@ -19,8 +21,14 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from ags_common import nfc, run_cmd
+from ags_vault_loader import read_asset
 
-TEMPLATE = json.loads(Path(__file__).with_name("ags_capcut_template.json").read_text(encoding="utf-8"))
+
+@functools.lru_cache(maxsize=1)
+def capcut_template() -> dict:
+    return json.loads(read_asset("templates/ags_capcut_template.json").decode("utf-8"))
+
+
 PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 PHOTO_DURATION_US = 10_800_000_000  # CapCut ghi ảnh tĩnh là 3 giờ
 DEFAULT_PHOTO_SECONDS = 3.0
@@ -44,7 +52,7 @@ def _us(seconds: float) -> int:
 
 
 def _new(kind: str, **values):
-    obj = copy.deepcopy(TEMPLATE[kind])
+    obj = copy.deepcopy(capcut_template()[kind])
     obj.update(values)
     return obj
 
@@ -201,7 +209,7 @@ class AgsCapCutDraft:
                 "bold": True,
                 "font": {"id": "", "path": font},
                 "strokes": [{"content": {"render_type": "solid", "solid": {"color": [0, 0, 0]}},
-                             "width": TEMPLATE["text"]["border_width"], "mode": 0}],
+                             "width": capcut_template()["text"]["border_width"], "mode": 0}],
                 "useLetterColor": True,
             }],
             "text": text,
@@ -209,7 +217,7 @@ class AgsCapCutDraft:
         material_id = self._material("texts", "text", content=json.dumps(content, ensure_ascii=False),
                                      font_size=size, font_path=font, text_color=color.lower())
         animation = self._material("material_animations", "material_animation")
-        clip = copy.deepcopy(TEMPLATE["segment"]["clip"])
+        clip = copy.deepcopy(capcut_template()["segment"]["clip"])
         clip["transform"]["y"] = y
         return self._segment("text", material_id, [animation], _us(start_at), _us(duration), None,
                              clip=clip, hdr_settings=None, render_index=14000)

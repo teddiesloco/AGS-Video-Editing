@@ -18,7 +18,7 @@ quyết định cho agent**, không phải luật và không phải tính năng 
 - **Nhịp có lý do.** Cắt khi có chuyển ý, đổi chủ thể, hoặc theo beat nhạc **nếu** concept cần. Nếu người dùng yêu cầu rõ "mỗi
   cảnh 3 giây" hoặc "30 s = 10 × 3 s" thì tôn trọng (`--seconds 3`, xem Bước 4); nếu không, **3 s không phải mặc định chung** —
   mỗi concept bên dưới chỉ là khoảng thử.
-- **Vùng trên khung 9:16 (soát bằng mắt, không tự động).** Hình chữ nhật `x 120–780, y 288–1248` trên 1080x1920 (viền hồng trong
+- **Vùng trên khung 9:16 (soát bằng mắt, không tự động).** Hình chữ nhật `x 200–880, y 288–1248` trên 1080x1920 (viền hồng trong
   contact sheet) là **ranh giới xem trước CHỮ do engine dùng, mang tính thận trọng** — không phải ranh giới chung cho mọi nền
   tảng/định dạng organic hay quảng cáo, và **không phải ranh giới của chủ thể**. Chủ thể, cảnh và khoảng trống âm (negative
   space) được phép nằm ngoài viền; khoảng trống không tự động là "vùng chết". Chỉ cần tránh để **chữ** nằm ngoài viền. Trong

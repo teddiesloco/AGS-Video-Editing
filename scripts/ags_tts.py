@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unicodedata
+import urllib.error
 import urllib.request
 import wave
 
@@ -128,7 +129,68 @@ def _save_wav_f32(audio, path: str, sample_rate: int = 48000) -> None:
         wf.writeframes(pcm16.tobytes())
 
 
-def generate(engine, text=None, voice=None, output=None):
+class GeminiTTSError(RuntimeError):
+    """Gemini TTS call failed; `status` is the HTTP status (4xx = wrong/retired model or bad request), 0 otherwise."""
+
+    def __init__(self, message, status=0):
+        super().__init__(message)
+        self.status = status
+
+
+GEMINI_TTS_DEFAULT_MODEL = "gemini-3.8-flash-tts"  # https://ai.google.dev/gemini-api/docs/speech-generation
+# engine "gemini-remote": cùng lời gọi Interactions API nhưng chạy trên máy chủ giữ khoá (khoá không bao giờ về máy này).
+# Chương trình dưới đây được gửi qua stdin của `ssh <AGS_GEMINI_SSH_HOST> python3 -`: đọc GEMINI_API_KEYS/GEMINI_API_KEY
+# trong file env của máy chủ (AGS_GEMINI_SSH_ENV_FILE) vào bộ nhớ, gửi khoá ở header, khoá báo 429 thì xoay khoá kế
+# tiếp, trả WAV qua stdout (không ghi file nào trên máy chủ); stderr chỉ có số thứ tự khoá và mã lỗi đã lọc khoá.
+_REMOTE_GEMINI = r'''
+import base64, io, json, re, sys, urllib.error, urllib.request, wave
+from pathlib import Path
+REQ = json.loads(REQ_JSON)
+env = {}
+for line in Path(REQ["env_file"]).expanduser().read_text(encoding="utf8", errors="replace").splitlines():
+    m = re.match(r"\s*(?:export\s+)?(GEMINI_API_KEYS?)\s*=\s*(.*?)\s*$", line)
+    if m:
+        env[m.group(1)] = m.group(2).strip("'\"")
+keys = list(dict.fromkeys(k for k in re.split(r"[,;\s]+", env.get("GEMINI_API_KEYS", "")) + [env.get("GEMINI_API_KEY", "")] if k))
+if not keys:
+    sys.exit("no GEMINI_API_KEY(S) in env file")
+clean = lambda s: re.sub(r"AIza[0-9A-Za-z_-]{20,}", "<key>", s)
+for ki, key in enumerate(keys):
+    req = urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/interactions",
+                                 data=json.dumps(REQ["payload"]).encode(), method="POST",
+                                 headers={"x-goog-api-key": key, "Content-Type": "application/json"})
+    try:
+        body = json.loads(urllib.request.urlopen(req, timeout=240).read())
+        break
+    except urllib.error.HTTPError as e:
+        if e.code == 429 and ki + 1 < len(keys):
+            print(f"key {ki + 1}/{len(keys)}: 429, next key", file=sys.stderr, flush=True)
+            continue
+        try:
+            err = json.loads(e.read().decode("utf8", "replace")).get("error", {})
+            detail = f"{err.get('status', '')} {err.get('message', '')}"
+        except Exception:
+            detail = ""
+        print(f"HTTP {e.code} {clean(detail)[:240]} (key {ki + 1}/{len(keys)})", file=sys.stderr)
+        sys.exit(10 + min(e.code // 100, 5))
+    except Exception as e:
+        print(clean(f"{type(e).__name__}: {e}")[:240], file=sys.stderr)
+        sys.exit(3)
+print(f"key {ki + 1}/{len(keys)}: ok", file=sys.stderr, flush=True)
+blocks = [c["data"] for st in body.get("steps", []) for c in st.get("content", []) if c.get("type") == "audio" and c.get("data")]
+if not blocks:
+    sys.exit("no audio in response")
+raw = base64.b64decode(blocks[-1])
+if raw[:4] != b"RIFF":  # PCM s16le 24 kHz mono
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(24000); w.writeframes(raw)
+    raw = buf.getvalue()
+sys.stdout.buffer.write(raw)
+'''
+
+
+def generate(engine, text=None, voice=None, output=None, style=None):
     if text is not None and not text.strip():
         raise ValueError("Text must not be empty")
     if text is not None and output is None:
@@ -172,38 +234,65 @@ def generate(engine, text=None, voice=None, output=None):
         audio = concat_with_silence([tts.synthesize(s, voice=preset) for s in segments],
                                     silence_sec=0.15, sample_rate=tts.sample_rate)
         save = tts.save_audio
-    elif engine == "gemini":
-        gemini_voices = ["Kore", "Aoede", "Puck", "Charon", "Fenrir"]
+    elif engine in ("gemini", "gemini-remote"):
+        gemini_voices = ["Kore", "Aoede", "Puck", "Charon", "Fenrir", "Algieba"]
         if text is None:
             return {"engine": engine, "voices": gemini_voices}
         voice_name = voice or "Kore"
-        api_key = (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "").strip()
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required for engine=gemini")
         sr = 48000
-        model = os.environ.get("AGS_GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        model = os.environ.get("AGS_GEMINI_TTS_MODEL", "").strip() or GEMINI_TTS_DEFAULT_MODEL
+        # Interactions API: `text` is read verbatim; delivery direction goes in speech_metadata.style.
+        content = {"type": "text", "text": text}
+        if style:
+            content["annotations"] = [{"type": "speech_metadata", "style": str(style)}]
         payload = {
-            "contents": [{"parts": [{"text": text}]}],
-            "generationConfig": {
-                "responseModalities": ["AUDIO"],
-                "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice_name}}},
-            },
+            "model": model,
+            "input": [{"type": "user_input", "content": [content]}],
+            "response_format": {"type": "audio"},
+            "generation_config": {"speech_config": [{"voice": voice_name}]},
         }
-        req = urllib.request.Request(
-            url, data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}, method="POST",
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=45) as resp:
-                body = json.loads(resp.read().decode("utf-8"))
-            part = body["candidates"][0]["content"]["parts"][0]["inlineData"]
-            raw_pcm = base64.b64decode(part["data"])
-            import numpy as np
-            pcm24 = np.frombuffer(raw_pcm, dtype="<i2").astype(np.float32) / 32768.0
-            audio = np.repeat(pcm24, 2)  # 24kHz -> 48kHz
-        except Exception as exc:
-            raise RuntimeError(f"Gemini TTS synthesis failed: {exc}") from exc
+        if engine == "gemini-remote":
+            host = os.environ.get("AGS_GEMINI_SSH_HOST", "").strip()
+            env_file = os.environ.get("AGS_GEMINI_SSH_ENV_FILE", "").strip()
+            if not host or not env_file:
+                raise RuntimeError("engine=gemini-remote needs AGS_GEMINI_SSH_HOST and AGS_GEMINI_SSH_ENV_FILE")
+            program = f"REQ_JSON = {json.dumps(json.dumps({'env_file': env_file, 'payload': payload}))}\n{_REMOTE_GEMINI}"
+            proc = subprocess.run(["ssh", "-o", "BatchMode=yes", host, "python3", "-"], input=program.encode("utf-8"),
+                                  capture_output=True, timeout=300)
+            note = re.sub(r"AIza[0-9A-Za-z_-]{20,}", "<key>", proc.stderr.decode("utf-8", "replace")).strip()[-400:]
+            if proc.returncode != 0 or proc.stdout[:4] != b"RIFF":
+                status = (proc.returncode - 10) * 100 if 11 <= proc.returncode <= 15 else 0
+                raise GeminiTTSError(f"Gemini TTS model {model} via ssh failed: {note}", status)
+            wav_bytes = proc.stdout
+        else:
+            api_key = (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "").strip()
+            if not api_key:
+                raise RuntimeError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required for engine=gemini")
+            req = urllib.request.Request(
+                "https://generativelanguage.googleapis.com/v1beta/interactions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json", "x-goog-api-key": api_key}, method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=90) as resp:
+                    body = json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as exc:
+                detail = exc.read().decode("utf-8", "replace")[:400]
+                raise GeminiTTSError(f"Gemini TTS model {model} HTTP {exc.code}: {detail}", exc.code) from None
+            except Exception as exc:
+                raise GeminiTTSError(f"Gemini TTS model {model} failed: {type(exc).__name__}: {exc}") from None
+            audio_blocks = [c for step in body.get("steps", []) if step.get("type") == "model_output"
+                            for c in step.get("content", []) if c.get("type") == "audio" and c.get("data")]
+            if not audio_blocks:
+                raise GeminiTTSError(f"Gemini TTS model {model} returned no audio")
+            wav_bytes = base64.b64decode(audio_blocks[-1]["data"])
+        import io
+        import numpy as np
+        with wave.open(io.BytesIO(wav_bytes)) as wav:  # unary default: audio/wav 24 kHz mono
+            src_rate = wav.getframerate()
+            pcm = np.frombuffer(wav.readframes(wav.getnframes()), dtype="<i2").astype(np.float32) / 32768.0
+        audio = np.repeat(pcm, sr // src_rate) if sr % src_rate == 0 else np.interp(
+            np.arange(round(pcm.size * sr / src_rate)) * src_rate / sr, np.arange(pcm.size), pcm).astype(np.float32)
         class _Holder:
             sample_rate = sr
         tts = _Holder()
@@ -217,7 +306,7 @@ def generate(engine, text=None, voice=None, output=None):
         tts = _Holder()
         save = lambda arr, p: _save_wav_f32(arr, p, sample_rate=sr)
     else:
-        raise ValueError("Engine must be vieneu, gemini, synth, or zerotts")
+        raise ValueError("Engine must be vieneu, gemini, gemini-remote, synth, or zerotts")
     import numpy as np
     if not np.asarray(audio).size or not np.isfinite(audio).all():
         raise RuntimeError("Engine returned empty or non-finite audio")
@@ -231,17 +320,21 @@ def generate(engine, text=None, voice=None, output=None):
             shutil.copyfileobj(source, target)
     finally:
         Path(temporary).unlink(missing_ok=True)
-    return {"engine": engine, "output": str(output), "sample_rate": tts.sample_rate,
-            "seconds": np.asarray(audio).size / tts.sample_rate}
+    result = {"engine": engine, "output": str(output), "sample_rate": tts.sample_rate,
+              "seconds": np.asarray(audio).size / tts.sample_rate}
+    if engine in ("gemini", "gemini-remote"):
+        result.update(model=model, style=style or "", voice=voice_name)
+    return result
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["voices", "synthesize"])
-    parser.add_argument("--engine", required=True, choices=["vieneu", "gemini", "synth", "zerotts"])
+    parser.add_argument("--engine", required=True, choices=["vieneu", "gemini", "gemini-remote", "synth", "zerotts"])
     parser.add_argument("--text-file", type=Path, help="UTF-8 Vietnamese text")
     parser.add_argument("--voice", help="Bundled preset name")
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--style", help="gemini only: delivery direction, e.g. 'đanh, chắc, nhấn con số, nhịp nhanh vừa'")
     args = parser.parse_args()
     if args.command == "synthesize" and (args.text_file is None or args.out is None):
         parser.error("synthesize requires --text-file and --out")
@@ -250,7 +343,7 @@ def main():
         if args.text_file and args.out and args.text_file.resolve() == args.out.resolve():
             raise ValueError("Input and output must differ")
         with contextlib.redirect_stdout(sys.stderr):  # engine banners must not corrupt the JSON result
-            result = generate(args.engine, text, args.voice, args.out)
+            result = generate(args.engine, text, args.voice, args.out, style=args.style)
         print(json.dumps(result))  # ASCII-escaped: safe on non-UTF-8 Windows consoles
     except ImportError as error:
         parser.exit(1, f"Missing optional TTS dependency: {error}. Install requirements-tts.txt into the AGS venv.\n")

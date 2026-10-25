@@ -1,11 +1,80 @@
 # 📖 HƯỚNG DẪN SỬ DỤNG — AGS VIDEO EDITING (AGS — Agent Space)
 
-Hướng dẫn dùng bộ 9 skill edit video của AGS (Agent Space) trên **coding agent chạy cục bộ** (Claude Code, Google Antigravity,
+Hướng dẫn dùng bộ 10 skill dựng/edit video của AGS (Agent Space) trên **coding agent chạy cục bộ** (Claude Code, Google Antigravity,
 OpenAI Codex, Gemini CLI, Cursor), qua **MCP server** (tuỳ chọn), và nói rõ **giao diện web** (claude.ai, chatgpt.com) làm được/không làm được gì.
+
+## Bảng chọn món — Anh/chị muốn gì → nói câu nào → ra gì
+Chép câu mẫu vào ô chat của trợ lý (Claude Code, Codex, Antigravity, Cursor), sửa chữ trong ngoặc cho đúng việc của mình.
+
+| Anh/chị muốn gì | Nói câu nào (sửa chữ trong ngoặc) | Ra gì |
+|---|---|---|
+| Bất động sản — giới thiệu lô đất, căn hộ | "Làm video 45 giây giới thiệu (lô đất 5x20 ở Long An) từ ảnh em gửi, giọng miễn phí." | Video dọc có ảnh/clip của anh/chị, khung lô đất, chữ thông tin, giọng đọc, phụ đề |
+| Quán ăn, đồ uống (F&B) | "Làm video 30 giây giới thiệu (món bún bò mới) của quán, giọng Google AI." | Video dọc ảnh món ăn có chuyển động, câu mở hút mắt, lời mời ghé quán |
+| Giáo dục, khoá học | "Làm video 45 giây giải thích (vì sao học tiếng Anh mãi chưa nói được)." | Video giảng giải ngắn, mỗi ý một hình, từ khoá tô màu |
+| Y tế – làm đẹp (phòng khám, spa) | "Làm video 30 giây chia sẻ (3 sai lầm khi chăm da mùa nắng) cho spa." | Video lời khuyên, giọng ấm, phụ đề rõ, không hứa hiệu quả chữa trị |
+| Bán hàng online (thương mại điện tử) | "Làm video 30 giây giới thiệu (bình giữ nhiệt mới), nhấn giá và ưu đãi em đưa." | Video sản phẩm, giá/ưu đãi tô màu nổi, lời mời đặt hàng nhẹ nhàng |
+| Tư duy kinh doanh — "30 năm trong 60 giây" | "Làm video 30 năm tư duy kinh doanh trong 60 giây về (dòng tiền), kiểu Business Thinking." | 60 giây: câu mở ≤ 8 chữ + 5–7 nguyên tắc ngắn + câu kết, Việt hoá 100% |
+| Giải thích kiểu Jetlag, Việt hoá | "Làm video kiểu Jetlag Việt hoá giải thích (vì sao cà phê Việt xuất khẩu nhiều mà giá rẻ)." | 45–75 giây kể chuyện – giải thích có con số, ví dụ và tiền tệ Việt Nam |
+| Du lịch, điểm đến | "Làm video 45 giây kể chuyện (vì sao Phú Quý ngày càng đông khách)." | Video kể chuyện điểm đến, có bản đồ/con số anh/chị cung cấp |
+| Dịch vụ cho doanh nghiệp (B2B) | "Làm video 45 giây giải thích (quy trình 3 bước làm kế toán thuê) bằng sơ đồ 3D." | Video sơ đồ khối 3D: đầu vào → xử lý → kết quả |
+
+### Nói xong thì trợ lý làm gì (AGS Video Studio)
+1. **Hỏi lại tối đa 3 câu ngắn**, câu nào anh/chị đã nói thì bỏ qua:
+   (1) Ngành/chủ đề gì? (2) Phong cách mẫu nào? (3) Giọng đọc miễn phí trên máy hay giọng Google AI (Gemini)?
+   Trả lời ngoài các lựa chọn → trợ lý hỏi lại đúng câu đó kèm danh sách để chọn.
+2. **Viết lời đọc tiếng Việt tự nhiên** (không dịch từng chữ, câu ngắn, câu mở đầu ≤ 8 chữ trên hình) và tự kiểm tới khi đạt.
+   Anh/chị không phải viết. Có bài/link tham khảo thì gửi: trợ lý chỉ học ý, không chép nguyên văn quá 8 từ.
+3. **Báo chi phí bằng tiền Việt trước khi làm** (ví dụ cách hiển thị: `12.000 đ`): số ảnh AI × đơn giá, giọng Google AI theo số
+   chữ, thời gian dựng ước tính. Giọng miễn phí + hình có sẵn = **0 đồng**. Đơn giá theo bảng giá của người bán bộ này.
+   Mặc định dùng hình miễn phí; muốn ảnh AI vẽ riêng cho từng ý thì nói "dùng ảnh AI" — trợ lý báo giá lại.
+4. **Chờ anh/chị gõ "chạy"**. Chưa gõ "chạy" thì trợ lý không dựng, không gọi dịch vụ tính phí nào.
+5. **Gửi video + ảnh lưới 12 khung** (mỗi khung có mốc giây) để anh/chị duyệt bằng mắt trước khi đăng.
+6. **Sửa bằng lời thường** — nói như nói với người dựng phim:
+
+| Anh/chị nói | Trợ lý đổi |
+|---|---|
+| "đổi sub sang vàng" | Chỉ màu chữ phụ đề thành vàng, dựng lại phần bị ảnh hưởng |
+| "chữ to hơn" / "chữ nhỏ lại" | Cỡ chữ phụ đề (vẫn nằm trong vùng không bị nút của app che) |
+| "đọc chậm lại" / "đọc nhanh hơn" | Tốc độ giọng đọc |
+| "đổi sang giọng Google" / "dùng giọng miễn phí" | Giọng đọc (đổi sang giọng tính phí thì báo giá và chờ "chạy" lại) |
+| "đổi cảnh 3" | Thay hình của cảnh số 3 |
+| "bỏ câu kêu gọi cuối" / "câu cuối là: Nhắn em để giữ chỗ" | Câu kêu gọi cuối video |
+| "làm 3 bản thử câu mở đầu" | 3 video chỉ khác 3 giây đầu để anh/chị đăng thử và tự so (báo chi phí trước) |
+
+Câu chưa rõ như "làm đẹp hơn" → trợ lý hỏi lại 1 câu kèm 3 gợi ý, không tự đoán.
+
+**Màu chữ có nghĩa:** xanh = tiền, lợi nhuận, kết quả tốt · vàng = nhấn mạnh, con số, thời gian · đỏ = cảnh báo, sai lầm, mất mát.
+
+**Cam kết nội dung:** bộ này không hứa thu nhập hay lượt xem. Số liệu về doanh thu/khách hàng/kết quả của chính anh/chị chỉ
+dùng khi anh/chị đưa; chưa có thì trợ lý đổi thành ví dụ minh hoạ có nhãn "ví dụ" trên video. "Business Thinking", "Jetlag"
+chỉ là tên thể loại để anh/chị dễ gọi: trợ lý học cách kể, không dùng tên, logo, hình, tiếng hay câu chữ của các kênh đó.
+
+**Giọng Google AI (Gemini):** cần khoá Google AI của anh/chị đặt trong biến môi trường `GEMINI_API_KEY` trên máy (trợ lý
+hướng dẫn); đừng dán khoá vào khung chat. Chưa có khoá thì chọn giọng miễn phí — trợ lý không tự đổi giọng khi chưa hỏi.
+
+### Khi trợ lý báo chưa làm được
+| Trợ lý nói | Anh/chị làm gì |
+|---|---|
+| "Bộ cài thiếu bảng chọn món — chạy lại cài đặt." | Nói "cài lại bộ video" để trợ lý chạy lại cài đặt |
+| "Em chưa hiểu câu trả lời. Chọn 1 trong: …" | Chọn 1 lựa chọn trong danh sách |
+| "Anh/chị chưa bấm đồng ý chi phí nên em chưa chạy." | Xem lại chi phí rồi gõ "chạy" |
+| "Nguồn không đọc được / kịch bản trùng nguồn quá 8 từ — em viết lại bằng lời của mình." | Không cần làm gì, hoặc gửi bài tham khảo khác |
+| "Câu số N còn nghe như dịch máy hoặc sai nhịp …" | Không cần làm gì — trợ lý tự viết lại |
+| "Cảnh N tạo ảnh AI chưa được, em dùng hình dự phòng." | Xem ảnh lưới; muốn đổi thì nói "đổi cảnh N" |
+| "Chưa có khoá Google AI — chọn giọng miễn phí hoặc dán khoá." | Chọn giọng miễn phí, hoặc nhờ trợ lý hướng dẫn đặt khoá trên máy |
+| "Chữ phụ đề lấn vùng giao diện — em đã thu nhỏ/đổi dòng." | Không cần làm gì |
+| "Chưa tạo được ảnh lưới xem trước." | Mở thẳng file video để xem |
+| "Em chưa chắc ý anh/chị: đổi màu chữ, đổi giọng hay đổi cảnh nào?" | Chọn 1 trong 3 gợi ý |
+| "Video chưa đạt chuẩn: …" | Chờ trợ lý sửa và dựng lại |
+| "Câu mở đầu chưa đủ lực: …" | Không cần làm gì — trợ lý tự viết lại |
+| "Câu này nói về kết quả thật của anh/chị nhưng em chưa có số liệu — anh/chị đưa số hoặc em đổi thành ví dụ minh hoạ." | Đưa số thật của mình, hoặc đồng ý dùng ví dụ minh hoạ |
+| "Giọng Google AI mô hình cũ/không chạy — em thử mô hình mới hoặc đề nghị giọng miễn phí." | Chọn thử lại hoặc dùng giọng miễn phí |
 
 > **Trạng thái kiểm chứng (nói thật):** mọi thứ dưới đây đã được chạy thực tế trên **macOS Apple Silicon, Python 3.11**.
 > Installer Windows (`CAI-DAT-WIN.bat`) và chạy trên Linux **chưa được chạy thử**; việc thả skill vào từng client khác ngoài
 > những gì ghi cụ thể làm theo tài liệu của client, chưa được thử trên từng client. Nếu gặp lỗi, đưa stderr cho agent.
+> AGS Video Studio (phần trên) là phần mới: cài vào 4 client đã được kiểm bằng test cài đặt trên thư mục nhà giả; hội thoại
+> trong từng client chưa được thử tay.
 
 ---
 
@@ -59,6 +128,7 @@ Chi tiết giấy phép: `THIRD_PARTY_NOTICES.md`. Tải TTS lần đầu mất 
 
 | Skill | Lệnh (chạy từ thư mục skill bằng Python của venv) |
 |---|---|
+| `/ags-studio` | `python scripts/ags_studio.py intake --request "<câu khách>" --json` → kịch bản qua `python scripts/ags_vi_script.py validate\|hook\|claims ... --json` → `quote --script-file ... --hook-text ...` → (khách gõ "chạy") `run --confirmed` → `revise --say "..."` / `variants --count 3 --hook ... ×3` — quy trình đủ ở `skills/ags-studio/SKILL.md` |
 | `/ags-edit-az` | `python scripts/ags_cut_silence.py <video> [--min-silence 0.4] [--threshold-db -30] [--model base]` |
 | `/ags-edit-hook` | `python scripts/ags_text_behind_person.py <video> --text "<HOOK>" [--duration 3]` |
 | `/ags-edit-editorial` | `python scripts/ags_editorial_sub.py <video> [--style clean\|editorial\|karaoke] [--keywords "..."]` |
@@ -83,7 +153,7 @@ Quy tắc chung cho mọi agent nằm ở [`AGENTS.md`](AGENTS.md). Model Whispe
 ### 1. Claude Code
 - Thả thư mục `ags-video-editing/` vào `~/.claude/skills/` (toàn máy) hoặc `<dự án>/.claude/skills/` (theo dự án) rồi chat:
   > *"Dùng skill ags-clip-shorts làm 3 short từ ~/Desktop/livestream.mp4, kiểm định từng short."*
-- Skill gốc `SKILL.md` điều phối 9 skill con trong `skills/`. Không cần `claude mcp add` để dùng — Claude Code chạy script qua terminal.
+- Skill gốc `SKILL.md` điều phối 10 skill con trong `skills/` (gồm `ags-studio`). Không cần `claude mcp add` để dùng — Claude Code chạy script qua terminal.
 - MCP (tuỳ chọn, dùng ở mọi dự án): `python scripts/ags_setup.py --register-claude-code` (cần lệnh `claude` trong PATH), hoặc lệnh do
   `--print-mcp` in ra. Cũng có thể mở chính thư mục skill làm dự án: `.mcp.json` do installer sinh sẵn đường dẫn tuyệt đối.
 
@@ -107,8 +177,8 @@ Quy tắc chung cho mọi agent nằm ở [`AGENTS.md`](AGENTS.md). Model Whispe
 - Theo geminicli.com, từ 18/06/2026 người dùng gói miễn phí / Google One chuyển sang Antigravity CLI — khi đó làm theo mục 3.
 
 ### 5. Cursor
-- `.cursor/rules/ags-video-editing.mdc` (Agent tự kéo vào khi việc liên quan video) và `AGENTS.md` được Cursor đọc sẵn khi mở
-  thư mục skill làm dự án.
+- `.cursor/rules/ags-video-editing.mdc` (Agent tự kéo vào khi việc liên quan video; trỏ tới `skills/ags-studio/SKILL.md` cho
+  yêu cầu "làm video cho ngành X") và `AGENTS.md` được Cursor đọc sẵn khi mở thư mục skill làm dự án.
 - MCP: installer sinh `.cursor/mcp.json` với đường dẫn tuyệt đối (không còn biến thay thế đường dẫn) — bật trong
   **Customize → MCP**. Dùng ở dự án khác: dán khối từ `--print-mcp` vào `~/.cursor/mcp.json`.
 
@@ -138,6 +208,22 @@ phụ thuộc cwd; mọi đường dẫn cấu hình là **tuyệt đối do ins
 | `tts_synthesize` | `engine`, `text_path`, `output_path` (WAV mới), `voice?` |
 | `sfx_list` | — |
 | `sfx_mix` | `input_path`, `events[]` (`file`, `time`, `gain?`), `output_path` |
+| `blender_3d_render` | `output_path`, `scene_preset?`, `seconds?`, `title?`, `mode?` (cần add-on Blender tuỳ chọn) |
+| `ags_studio_menu` | — (bảng chọn món của bản cài) |
+| `ags_studio_intake` | `request?` (câu đầu của khách), `job_dir?`, `topic?`, `preset?`, `voice?` (`synth`/`vieneu`/`gemini`), `images?` (`ai`/`free`) |
+| `ags_studio_quote` | `job_dir`, `script_path?`, `hook_text?` (chữ mở ≤ 8 từ), `claims[]?`, `source_url?`, `source_text?` |
+| `ags_studio_run` | `job_dir`, `confirmed` (chỉ `true` sau khi khách gõ "chạy") |
+| `ags_studio_revise` | `job_dir`, `say` (nguyên văn câu khách), `confirmed?` |
+| `ags_studio_variants` | `job_dir`, `hooks[]` (3 câu mở khác loại), `count?` (3), `confirmed?` |
+| `ags_studio_proof` | `spec_path`, `out_dir`, `confirmed?` (bằng chứng render của người bán) |
+| `ags_studio_validate_script` | `script`, `duration_sec`, `source_text?` |
+| `ags_studio_hook` | `spoken?` (trống = thư viện 8 loại câu mở), `on_screen?` |
+| `ags_studio_claims` | `script`, `claims[]` (`text`, `claim_source`: `khach-nhap` / `tai-lieu:<tên>` / `vi-du`) |
+| `ags_studio_profile` | `samples[]` (1–5 link công khai hoặc đoạn văn) |
+
+Tool `ags_studio_*` trả `exit_code`, `result` (JSON của lệnh), `stderr_tail`, `stdout_tail`. Lệnh `ags_studio.py` lỗi nghiệp
+vụ (exit `2`): `result.error.code` = `E-ags-video-studio-10x-NNN`, `result.error.message` bằng lời thường. Lệnh
+`ags_vi_script.py` chưa đạt (exit `1`): `result.ok = false`, `result.errors[]` ghi mã, số câu và lý do.
 
 **Lấy cấu hình đúng cho máy này:**
 ```bash
@@ -194,7 +280,7 @@ python harness/ags_anti_slop_guard.py video.mp4 --contact-sheet video_sheet.jpg
 - **Lỗi (exit 1):** không đọc được / không có hình / < 1 s; đen, đứng hình hoặc câm ≥ 90% thời lượng.
 - **Cảnh báo (exit 2):** không có tiếng; lệch hình-tiếng > 0.25 s; ngoài -14 ± 2 LUFS; true peak > -1 dBTP;
   đoạn đen ≥ 0.5 s; đứng hình ≥ 5 s; khoảng lặng ≥ 2 s.
-- Contact sheet: ô `#0` là khung 0, khung hồng là vùng an toàn 9:16. Soát và sửa theo
+- Contact sheet: ô `#0` là khung 0; thêm `--debug-zones` thì có khung hồng = vùng an toàn 9:16 (bản gửi khách không có). Soát và sửa theo
   [harness/QUY-TRINH-KIEM-DINH.md](harness/QUY-TRINH-KIEM-DINH.md) (tối đa 3 vòng).
 
 ---

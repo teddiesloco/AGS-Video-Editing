@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw  # noqa: E402
 
 from bds import (AgsCapCutDraft, AgsCinematicStyle, AgsDirectRenderer, AgsLandParcelStyle,  # noqa: E402
                  beat_durations, detect_beats)
-from bds.ags_capcut_draft import TEMPLATE  # noqa: E402
+from bds.ags_capcut_draft import capcut_template  # noqa: E402
 
 CLI = ROOT / "scripts" / "ags_bds_cli.py"
 LOTS = [
@@ -98,6 +98,7 @@ def test_capcut_draft(out, video, music, photo):
     assert raw == (folder / "draft_content.json").read_text(encoding="utf-8"), "draft_info/draft_content khác nhau"
     info = json.loads(raw)
     meta = json.loads((folder / "draft_meta_info.json").read_text(encoding="utf-8"))
+    TEMPLATE = capcut_template()  # noqa: N806
 
     same_keys("draft", info, TEMPLATE["draft"])
     same_keys("materials", info["materials"], TEMPLATE["draft"]["materials"])

@@ -1,0 +1,130 @@
+{
+  "_ghi_chu": "6 mẫu series có beat-sheet (FR-021). Người bán sửa được. Tổng 'sec' của beats = duration_sec; hook ≤ 5 giây (BR-010); scenes ≥ duration_sec / 2,5 để đổi cảnh trung bình ≤ 2,5 giây, không cảnh nào > 3 giây (BR-011); images = số ảnh AI (1 ảnh/ý + 1 ảnh hook, dùng lại với kiểu chuyển động khác). Kịch bản của mọi mẫu phải qua ags_vi_script.py validate/hook/claims (BR-001/002/010/012). Chỉ học ngữ pháp thể loại, không dùng hình/tiếng/câu chữ gốc của kênh tham khảo (BR-003).",
+  "aliases": {
+    "business-thinking-60s": "thirty-years-60s"
+  },
+  "motions_allowed": ["push_in", "pull_out", "pan_left", "pan_right", "parallax"],
+  "cta_examples": ["Lưu lại để áp dụng.", "Gửi cho người cần nghe điều này.", "Theo dõi để xem phần tiếp."],
+  "formats": {
+    "thirty-years-60s": {
+      "label": "N năm kinh nghiệm trong 60 giây",
+      "mo_ta": "Chuỗi 5–7 nguyên tắc ngắn, đối lập, mỗi câu 1 ý; câu cuối gói lại ý hook.",
+      "duration_sec": 60,
+      "duration_range": [55, 65],
+      "beats": [
+        {"block": "hook", "sec": 3, "viec": "Con số năm kinh nghiệm + 60 giây, hoặc 1 nghịch lý ≤ 8 từ."},
+        {"block": "body", "sec": 48, "viec": "5–7 nguyên tắc đánh số; mỗi nguyên tắc 1–2 câu, có vế đối lập."},
+        {"block": "close", "sec": 5, "viec": "Gói lại bằng 1 câu nhắc lại ý hook (kết vòng lặp)."},
+        {"block": "cta", "sec": 4, "viec": "CTA mềm ≤ 10 từ."}
+      ],
+      "ideas": [5, 7],
+      "scenes": 24,
+      "images": 8,
+      "motions": ["push_in", "pan_left", "pull_out", "pan_right", "parallax"],
+      "transitions": ["dissolve", "wipe"],
+      "keyword_color": "#A8FF3E",
+      "hook_types": ["nghich-ly", "ket-qua", "canh-bao"],
+      "voice_style": "Đanh, chắc, nhấn con số, nhịp nhanh vừa, ngắt rõ giữa các nguyên tắc."
+    },
+    "sai-lam-90": {
+      "label": "3 sai lầm và cách sửa",
+      "mo_ta": "Cảnh báo 3 sai lầm phổ biến, mỗi sai lầm kèm 1 cách sửa làm được ngay.",
+      "duration_sec": 90,
+      "duration_range": [80, 100],
+      "beats": [
+        {"block": "hook", "sec": 4, "viec": "Cảnh báo có con số: '3 sai lầm khiến…'."},
+        {"block": "body", "sec": 74, "viec": "Sai lầm 1 → cách sửa, sai lầm 2 → cách sửa, sai lầm 3 → cách sửa."},
+        {"block": "close", "sec": 7, "viec": "Nhắc sai lầm đắt nhất, gọi lại hook."},
+        {"block": "cta", "sec": 5, "viec": "CTA mềm ≤ 10 từ."}
+      ],
+      "ideas": [3, 3],
+      "scenes": 36,
+      "images": 7,
+      "motions": ["push_in", "pan_right", "pull_out", "pan_left", "parallax"],
+      "transitions": ["wipe", "dissolve"],
+      "keyword_color": "#FF5A5F",
+      "hook_types": ["canh-bao", "ket-qua", "cau-hoi"],
+      "voice_style": "Nghiêm, rõ, chậm lại ở tên sai lầm, nhanh hơn ở cách sửa."
+    },
+    "truoc-sau": {
+      "label": "Trước – sau có con số của khách",
+      "mo_ta": "Tình trạng trước, việc đã đổi, kết quả sau; số trước–sau phải là số của khách (claim_source) hoặc ghi 'ví dụ'.",
+      "duration_sec": 45,
+      "duration_range": [40, 50],
+      "beats": [
+        {"block": "hook", "sec": 3, "viec": "Đặt cảnh 'trước' cạnh 'sau' trong 1 câu."},
+        {"block": "body", "sec": 34, "viec": "Trước (nỗi đau) → 2–3 việc đã đổi → sau (con số của khách)."},
+        {"block": "close", "sec": 5, "viec": "Bài học rút ra, nối lại hình ảnh 'trước'."},
+        {"block": "cta", "sec": 3, "viec": "CTA mềm ≤ 10 từ."}
+      ],
+      "ideas": [3, 4],
+      "scenes": 18,
+      "images": 5,
+      "motions": ["pull_out", "push_in", "pan_left", "parallax", "pan_right"],
+      "transitions": ["wipe", "dissolve"],
+      "keyword_color": "#A8FF3E",
+      "hook_types": ["truoc-sau", "noi-dau", "cau-hoi"],
+      "voice_style": "Kể chuyện, ấm, nhấn mạnh con số 'sau'."
+    },
+    "nghich-ly": {
+      "label": "Hot take có lập luận",
+      "mo_ta": "1 nhận định ngược số đông, 3 lý do có ví dụ đời thường, chốt bằng cách áp dụng.",
+      "duration_sec": 45,
+      "duration_range": [40, 50],
+      "beats": [
+        {"block": "hook", "sec": 3, "viec": "Phát biểu nghịch lý ≤ 8 từ."},
+        {"block": "body", "sec": 34, "viec": "3 lý do, mỗi lý do 1 ví dụ bối cảnh Việt Nam."},
+        {"block": "close", "sec": 5, "viec": "Nhắc lại nghịch lý, giờ đã thành lẽ thường."},
+        {"block": "cta", "sec": 3, "viec": "CTA mềm ≤ 10 từ."}
+      ],
+      "ideas": [3, 4],
+      "scenes": 18,
+      "images": 5,
+      "motions": ["push_in", "parallax", "pan_right", "pull_out", "pan_left"],
+      "transitions": ["dissolve", "wipe"],
+      "keyword_color": "#FFD166",
+      "hook_types": ["nghich-ly", "cau-hoi", "nua-cau"],
+      "voice_style": "Tự tin, hơi thách thức, ngừng ngắn sau câu mở."
+    },
+    "pov": {
+      "label": "POV – tình huống người xem",
+      "mo_ta": "Đặt người xem vào 1 tình huống quen, cho thấy cách xử lý đúng.",
+      "duration_sec": 30,
+      "duration_range": [25, 35],
+      "beats": [
+        {"block": "hook", "sec": 3, "viec": "'POV: bạn là…' ≤ 8 từ."},
+        {"block": "body", "sec": 21, "viec": "Tình huống → phản ứng sai thường gặp → cách xử lý đúng."},
+        {"block": "close", "sec": 3, "viec": "Kết quả của cách đúng, gọi lại tình huống."},
+        {"block": "cta", "sec": 3, "viec": "CTA mềm ≤ 10 từ."}
+      ],
+      "ideas": [2, 3],
+      "scenes": 12,
+      "images": 4,
+      "motions": ["push_in", "pan_left", "pull_out", "pan_right"],
+      "transitions": ["dissolve", "wipe"],
+      "keyword_color": "#FFD166",
+      "hook_types": ["pov", "noi-dau", "canh-bao"],
+      "voice_style": "Thân mật, như đang nói với 1 người, nhịp nhanh."
+    },
+    "jetlag-vi": {
+      "label": "Giải thích 'thế giới vận hành' bối cảnh Việt Nam",
+      "mo_ta": "Kể chuyện – giải thích có con số/bản đồ; ví dụ, đơn vị tiền, địa danh đổi sang Việt Nam.",
+      "duration_sec": 60,
+      "duration_range": [45, 75],
+      "beats": [
+        {"block": "hook", "sec": 4, "viec": "Câu hỏi về 1 điều lạ quanh ta, hoặc 1 con số gây tò mò."},
+        {"block": "body", "sec": 46, "viec": "4–6 nhịp giải thích: bối cảnh → nguyên nhân → con số/bản đồ → hệ quả."},
+        {"block": "close", "sec": 6, "viec": "Trả lời câu hỏi ở hook bằng 1 câu."},
+        {"block": "cta", "sec": 4, "viec": "CTA mềm ≤ 10 từ."}
+      ],
+      "ideas": [4, 6],
+      "scenes": 24,
+      "images": 7,
+      "motions": ["parallax", "pan_right", "push_in", "pan_left", "pull_out"],
+      "transitions": ["dissolve", "wipe"],
+      "keyword_color": "#FFD166",
+      "hook_types": ["cau-hoi", "nghich-ly", "ket-qua"],
+      "voice_style": "Tò mò, rõ ràng, nhịp vừa, nhấn địa danh và con số."
+    }
+  }
+}
