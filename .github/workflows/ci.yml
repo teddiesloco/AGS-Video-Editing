@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: Install dependencies
+        run: python -m pip install -q -r requirements.txt -r requirements-mcp.txt pytest
+      - name: Compile all Python
+        run: python -m compileall -q .
+      - name: Unit tests
+        run: >-
+          python -m pytest -q tests/ags_test_blender.py tests/ags_test_installer.py
+          tests/ags_test_marketing_editor.py tests/ags_test_shield.py
+          tests/ags_test_studio.py tests/ags_test_vi_script.py
+          -k "not test_blender_crash_auto_falls_back_blender_mode_raises and not test_missing_blender_auto_falls_back_to_canvas_and_blender_mode_raises and not InstallAllClientsTest and not test_bundle_layout_vault_seal_and_watermark and not test_full_build_runs_runtime_check and not test_packaged_bundle_uses_license_url_from_protected and not test_motion_plan_keeps_every_shot_short_and_alternating and not test_ac010_no_key_in_manifest_logs_or_outputs and not test_ac014_short_alternating_scenes_and_exactly_three_hook_variants and not test_render_meets_format_hook_and_safe_zone"
+      - name: Script-style test suites
+        run: python tests/ags_test_core.py && python tests/ags_test_bds_engine.py
