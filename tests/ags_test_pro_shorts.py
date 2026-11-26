@@ -258,7 +258,7 @@ class ReviewRegressionTest(unittest.TestCase):
     def test_long_source_line_is_one_line_inside_safe_box(self):
         from PIL import ImageFont
         sources = ["Nguồn: Alex Hormozi · kênh The Game with Alex Hormozi · lồng tiếng Việt",
-                   "Nguồn: " + "W" * 100 + " · lồng tiếng Việt"]
+                   "Nguồn: " + "W" * 100 + " · lồng tiếng Việt", "W" * 100]
         for source in sources:
             with tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp) / "short.ass"

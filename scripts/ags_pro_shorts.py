@@ -347,16 +347,21 @@ def _emphasis(line):
 
 
 def fit_source(source):
-    """(từ, cỡ chữ, dòng): dòng nguồn luôn đúng 1 dòng trong SOURCE_BOX (cao 40 px, rộng 840 px); hạ cỡ chữ tới 22,
-    còn dài thì bỏ bớt từ cuối + '…' cho tới khi vừa."""
-    words = nfc(source).split()
+    """(từ, cỡ chữ, dòng): dòng nguồn luôn đúng 1 dòng, rộng <= SOURCE_BOX, cao vừa SOURCE_BOX; hạ cỡ chữ tới 22,
+    còn dài thì bỏ bớt từ cuối (rồi ký tự cuối của từ duy nhất) + '…' cho tới khi vừa."""
+    words = nfc(source).split() or ["…"]
     limit = (SOURCE_BOX[2] - SOURCE_BOX[0]) / FIT_MARGIN
     while True:
-        size, _, lines = fit_layout(words, "bold", 34, 0, limit, 1, 22, FONT_CAPTION)
-        if len(lines) == 1 or len(words) <= 1:
+        size, font, lines = fit_layout(words, "bold", 34, 0, limit, 1, 22, FONT_CAPTION)
+        if len(lines) == 1 and font.getlength(" ".join(words)) <= limit:
             return words, size, lines
-        words = words[:-1]
-        words[-1] = words[-1].rstrip("…") + "…" if not words[-1].endswith("…") else words[-1]
+        if len(words) > 1:
+            words = words[:-1]
+        elif len(words[0]) > 1:
+            words = [words[0].rstrip("…")[:-1] + "…"]
+        else:
+            return words, size, lines
+        words[-1] = words[-1].rstrip("…") + "…"
 
 
 def write_ass(path, cues, hook, source, total):
