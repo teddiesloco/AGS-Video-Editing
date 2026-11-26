@@ -36,12 +36,13 @@ PAPER, INK, GREEN, NEON = "#f4f4ef", "#0e1116", "#1f6f3d", "#a8ff3e"
 FONTS = ROOT / "assets" / "fonts"
 FONT_HOOK = FONTS / "BricolageGrotesque-Bold.ttf"
 FONT_CAPTION = FONTS / "BeVietnamPro-Bold.ttf"
-FONT_SOURCE = FONTS / "BeVietnamPro-Medium.ttf"
-# Vùng chữ nửa dưới (px): mọi hộp chữ phải nằm dưới đường chia, nên không che mặt người nói ở nửa trên.
-HOOK_BOX = (60, 1000, 1020, 1160)
-CAPTION_BOX = (60, 1190, 1020, 1450)
-SOURCE_BOX = (60, 1480, 1020, 1540)
-MARGIN_X = 60
+# Vùng chữ nửa dưới (px): mọi hộp chữ nằm dưới đường chia (không che mặt người nói ở nửa trên) và trong dải
+# x 120–960, y < 1430 (tránh cột nút bên phải và khối mô tả/tên kênh mà TikTok/Reels/Shorts đè lên đáy màn hình).
+HOOK_BOX = (120, 985, 960, 1135)
+CAPTION_BOX = (120, 1160, 960, 1360)
+SOURCE_BOX = (120, 1385, 960, 1425)
+MARGIN_X = 120
+FIT_MARGIN = 1.1             # dự phòng chênh số đo Pillow so với libass
 
 MAX_SHORT_SECONDS = 60.0     # bản quyền + nền tảng: mỗi short <= 60 s
 MIN_CLIP_SECONDS, MAX_CLIP_SECONDS = 20.0, 58.0
@@ -51,10 +52,12 @@ MISMATCH_SECONDS = 4.0       # clip gốc và giọng Việt lệch hơn mức n
 DUCK_DB = -21.0
 DUCK_RANGE = (-24.0, -18.0)
 CAPTION_MAX_CHARS, CAPTION_MAX_SECONDS = 36, 3.4
+CAPTION_HOLD_SECONDS = 1.0  # giữ phụ đề qua khoảng nghỉ ngắn của giọng thay vì để trống
 SFX_GAIN, SFX_MIN_GAP = 0.18, 6.0
 CHANNEL_VOICE = {"gemini": "Kore", "vieneu": None}  # một giọng cố định cho cả kênh (chốt sau khi nghe A/B)
 GEMINI_TTS_STYLE = "giọng người nói tự nhiên, rõ ràng, nhấn con số và ý chính, nhịp vừa phải"
 LUFS_TARGET, LUFS_TOLERANCE, TRUE_PEAK_MAX = -14.0, 1.0, -1.0
+LIMIT_DBFS = -2.5            # trần đỉnh mẫu; chừa ~1.5 dB cho đỉnh liên mẫu + mã hoá AAC
 LLM_MODEL = os.environ.get("AGS_GEMINI_TEXT_MODEL", "").strip() or "gemini-2.5-flash"
 
 
@@ -299,19 +302,20 @@ def segment_starts(segments, words):
 # --------------------------------------------------------------------------- phụ đề + bố cục
 
 def caption_cues(words, lead=VOICE_LEAD):
-    """Cụm phụ đề theo mốc giọng TTS: [{start, end, words}]; mỗi cụm kéo dài tới cụm kế nếu hở < 0.3 s (không nhấp nháy)."""
+    """Cụm phụ đề theo mốc giọng TTS: [{start, end, words}]; cụm giữ tới cụm kế nếu hở < CAPTION_HOLD_SECONDS
+    (không nháy trống ở chỗ giọng nghỉ giữa câu)."""
     groups = group_word_lists([(s + lead, e + lead, w) for s, e, w in words], CAPTION_MAX_CHARS, CAPTION_MAX_SECONDS,
                               clean=False, semantic_chunk=True)
     cues = [{"start": g[0][0], "end": g[-1][1], "words": [w[2] for w in g]} for g in groups]
     for cue, nxt in zip(cues, cues[1:]):
-        if nxt["start"] - cue["end"] < 0.3:
+        if nxt["start"] - cue["end"] < CAPTION_HOLD_SECONDS:
             cue["end"] = nxt["start"]
     return cues
 
 
-def layout_cue(cue_words, font_file=FONT_CAPTION, base=76, floor=60, box=CAPTION_BOX):
+def layout_cue(cue_words, font_file=FONT_CAPTION, base=72, floor=56, box=CAPTION_BOX):
     """(cỡ chữ, dòng) cho cụm phụ đề: tối đa 2 dòng, vừa bề ngang hộp chữ."""
-    limit = box[2] - box[0]
+    limit = (box[2] - box[0]) / FIT_MARGIN
     size, _, lines = fit_layout(cue_words, "bold", base, 0, limit, 2, floor, font_file)
     return size, [" ".join(cue_words[i] for i in line) for line in lines]
 
@@ -331,18 +335,18 @@ def _emphasis(line):
 def write_ass(path, cues, hook, source, total):
     """ASS 1080x1920: hook (Bricolage, nền neon) + dòng nguồn (xanh) suốt video; phụ đề Be Vietnam Pro ở giữa nửa dưới."""
     hook_words = nfc(hook).upper().split()
-    hook_size, _, hook_lines = fit_layout(hook_words, "bold", 60, 0, HOOK_BOX[2] - HOOK_BOX[0] - 40, 2, 48, FONT_HOOK)
-    hook_text = "\\N".join(" ".join(hook_words[i] for i in line) for line in hook_lines)
+    hook_size, _, hook_lines = fit_layout(hook_words, "bold", 56, 0, (HOOK_BOX[2] - HOOK_BOX[0] - 40) / FIT_MARGIN, 2, 42, FONT_HOOK)
+    hook_text = "\\N".join(ass_text(" ".join(hook_words[i] for i in line)) for line in hook_lines)
     styles = [
-        f"Style: Hook,{_family(FONT_HOOK)},{hook_size},{ass_color(INK)},&H000000,{ass_color(NEON)},&H00000000,-1,0,0,0,100,100,0,0,3,18,0,5,0,0,0,1",
-        f"Style: Caption,{_family(FONT_CAPTION)},76,{ass_color(INK)},&H000000,&H00F4F4EF,&H00000000,-1,0,0,0,100,100,0,0,1,0,0,5,{MARGIN_X},{MARGIN_X},0,1",
-        f"Style: Source,{_family(FONT_SOURCE)},34,{ass_color(GREEN)},&H000000,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,{MARGIN_X},{MARGIN_X},0,1",
+        f"Style: Hook,{_family(FONT_HOOK)},{hook_size},{ass_color(INK)},&H000000,{ass_color(NEON)},&H00000000,-1,0,0,0,100,100,0,0,3,14,0,5,0,0,0,1",
+        f"Style: Caption,{_family(FONT_CAPTION)},72,{ass_color(INK)},&H000000,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,0,0,5,{MARGIN_X},{MARGIN_X},0,1",
+        f"Style: Source,{_family(FONT_CAPTION)},34,{ass_color(GREEN)},&H000000,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,0,0,5,{MARGIN_X},{MARGIN_X},0,1",
     ]
     cx = W // 2
     hy = (HOOK_BOX[1] + HOOK_BOX[3]) // 2
     sy = (SOURCE_BOX[1] + SOURCE_BOX[3]) // 2
     cy = (CAPTION_BOX[1] + CAPTION_BOX[3]) // 2
-    events = [f"Dialogue: 1,{format_ass_time(0)},{format_ass_time(total)},Hook,,0,0,0,,{{\\an5\\pos({cx},{hy})}}{ass_text(hook_text)}",
+    events = [f"Dialogue: 1,{format_ass_time(0)},{format_ass_time(total)},Hook,,0,0,0,,{{\\an5\\pos({cx},{hy})}}{hook_text}",
               f"Dialogue: 0,{format_ass_time(0)},{format_ass_time(total)},Source,,0,0,0,,{{\\an5\\pos({cx},{sy})}}{ass_text(source)}"]
     for cue in cues:
         size, lines = layout_cue(cue["words"])
@@ -405,12 +409,30 @@ def render_short(video, item, meta, engine, voice, tmp, out_mp4, args):
              "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-r", FPS, "-pix_fmt", "yuv420p",
              "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", raw])
     import ags_sfx
+    mixed = Path(tmp) / "sfx.mp4"
+    ags_sfx.mix(raw, sfx_events(segment_starts(segments, words), total), mixed)
     out_mp4.parent.mkdir(parents=True, exist_ok=True)
     out_mp4.unlink(missing_ok=True)
-    ags_sfx.mix(raw, sfx_events(segment_starts(segments, words), total), out_mp4)
+    normalize_loudness(mixed, out_mp4)
     return {"file": out_mp4.name, "engine": engine, "voice": voice or "(preset mặc định)", "seconds": total,
             "voice_seconds": round(voice_seconds, 2), "tempo": tempo, "original_audio": timeline["original_audio"],
             "cues": len(caption_cues(words))}
+
+
+def normalize_loudness(src, dst, passes=3):
+    """-14 LUFS: bù gain theo độ to đo được rồi chặn đỉnh ở LIMIT_DBFS (true peak <= -1 dBTP cả sau AAC); limiter làm
+    hụt độ to nên đo lại và bù tiếp, tối đa `passes` lượt, tới khi lệch <= 0.3 LU. loudnorm một lượt hụt 1–2 LU trên
+    clip < 60 s, còn chế độ tuyến tính của nó bị từ chối khi đỉnh giọng TTS cao so với độ to."""
+    lufs, _ = measure_loudness(src)
+    gain, limit = LUFS_TARGET - lufs, 10 ** (LIMIT_DBFS / 20)
+    for _ in range(passes):
+        run_cmd(["ffmpeg", "-y", "-v", "error", "-i", src, "-map", "0:v:0", "-map", "0:a:0", "-c:v", "copy",
+                 "-af", f"volume={gain:.2f}dB,alimiter=limit={limit:.4f}:level=false:latency=true,aresample=48000",
+                 "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", dst])
+        lufs, _ = measure_loudness(dst)
+        if abs(lufs - LUFS_TARGET) <= 0.3:
+            break
+        gain += LUFS_TARGET - lufs
 
 
 def ffprobe_summary(path):
@@ -455,8 +477,9 @@ def check_output(path):
 
 
 def run_guard(mp4, sheet):
+    """Guard chất lượng (đen/đứng hình, lặng, loudness, lệch hình-tiếng) + contact sheet sạch để người duyệt xem."""
     done = subprocess.run([sys.executable, str(ROOT / "harness" / "ags_anti_slop_guard.py"), str(mp4),
-                           "--contact-sheet", str(sheet), "--debug-zones"], capture_output=True, text=True, encoding="utf-8")
+                           "--contact-sheet", str(sheet)], capture_output=True, text=True, encoding="utf-8")
     return done.returncode, done.stdout.strip()[-600:]
 
 
@@ -543,7 +566,9 @@ def main(argv=None):
             entry["check"] = check_output(mp4)
             code, text = run_guard(mp4, out / f"{label}_sheet.jpg")
             entry.update(guard_exit=code, guard=text)
-            failed |= code != 0
+            if code != 0:
+                failed = True
+                print(f"❌ E-pro-shorts-vi-011: guard báo lỗi trên {mp4.name} (exit {code}) — giữ file để xem", file=sys.stderr)
             (out / f"{label}.caption.txt").write_text(caption_text(item, meta), encoding="utf-8")
             report["shorts"].append(entry)
             print(json.dumps(entry, ensure_ascii=False), flush=True)

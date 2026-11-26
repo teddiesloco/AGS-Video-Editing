@@ -44,11 +44,13 @@ SAFE_MARGIN_OTHER = 0.08
 # Font có đủ dấu tiếng Việt, theo thứ tự ưu tiên (tên file trên macOS, Windows, Linux).
 # Pillow tự tìm tên file trong thư mục font hệ thống của từng hệ điều hành.
 _BUNDLED_FONTS = Path(__file__).resolve().parent.parent / "assets" / "fonts"
+# Cuối mỗi danh sách: Be Vietnam Pro đóng gói (OFL) cho máy không có font hệ thống, vd container Linux tối giản.
 FONT_FILES = {
     "bold": ["Montserrat-Bold.ttf", "Arial Bold.ttf", "arialbd.ttf",
-             "DejaVuSans-Bold.ttf", "NotoSans-Bold.ttf", "LiberationSans-Bold.ttf"],
+             "DejaVuSans-Bold.ttf", "NotoSans-Bold.ttf", "LiberationSans-Bold.ttf", str(_BUNDLED_FONTS / "BeVietnamPro-Bold.ttf")],
     "regular": ["Montserrat-SemiBold.ttf", "Arial.ttf", "arial.ttf",
-                "DejaVuSans.ttf", "NotoSans-Regular.ttf", "LiberationSans-Regular.ttf"],
+                "DejaVuSans.ttf", "NotoSans-Regular.ttf", "LiberationSans-Regular.ttf",
+                str(_BUNDLED_FONTS / "BeVietnamPro-Medium.ttf")],
     "serif": ["Georgia.ttf", "georgia.ttf",
               "DejaVuSerif.ttf", "NotoSerif-Regular.ttf", "LiberationSerif-Regular.ttf"],
 }

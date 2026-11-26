@@ -8,6 +8,7 @@ phần dưới đây thuộc giấy phép riêng của từng dự án; `LICENSE
 | Thành phần | Dùng để | Giấy phép |
 |---|---|---|
 | [Kenney — Interface Sounds 1.0](https://kenney.nl/assets/interface-sounds): `assets/sfx/click_001.ogg`, `close_001.ogg`, `confirmation_001.ogg`, `error_001.ogg`, `open_001.ogg`, `pluck_001.ogg` (+ bản sao giấy phép `assets/sfx/License.txt`) | Hiệu ứng âm thanh cho `ags_sfx.py` | **CC0 1.0** (Public Domain) — dùng cá nhân, giáo dục, thương mại; ghi nguồn Kenney không bắt buộc. **Đây là ngoại lệ riêng so với PolyForm Strict:** các file này không chịu hạn chế phi thương mại/không phân phối lại của AGS. |
+| [Be Vietnam Pro](https://github.com/bettergui/BeVietnamPro) (`assets/fonts/BeVietnamPro-Bold.ttf`, `BeVietnamPro-Medium.ttf`) và [Bricolage Grotesque](https://github.com/ateliertriay/bricolage) (`assets/fonts/BricolageGrotesque-Bold.ttf`, bản tĩnh wght 700 tách từ font variable) + bản sao giấy phép `assets/fonts/OFL-BeVietnamPro.txt`, `OFL-Bricolage.txt` | Phụ đề, hook, dòng nguồn của `ags_pro_shorts.py` | **SIL Open Font License 1.1** — dùng, nhúng, phân phối lại kèm phần mềm được; không bán riêng font. Không có Reserved Font Name. Ngoại lệ riêng so với PolyForm Strict như dòng trên. |
 
 ## 2. Không đóng gói — cài vào `venv/` hoặc tự tải khi chạy
 
@@ -50,7 +51,7 @@ có fallback dịch vụ từ xa. Model chỉ tải khi gọi lần đầu từ 
 - Đã chạy thực tế trên macOS Apple Silicon, Python 3.11, CPU. Windows/Linux chưa được chạy thử.
 
 ## 3. Ghi chú khác
-Font chữ: script dùng font có sẵn trong hệ điều hành (Arial Bold cho kiểu `clean`/`karaoke`, Georgia cho `editorial`, hoặc DejaVu, Noto, Liberation, Montserrat nếu đã cài) — không đóng gói font nào.
+Font chữ: các script cũ dùng font có sẵn trong hệ điều hành (Arial Bold cho kiểu `clean`/`karaoke`, Georgia cho `editorial`, hoặc DejaVu, Noto, Liberation, Montserrat nếu đã cài); riêng `ags_pro_shorts.py` dùng hai font OFL đóng gói ở mục 1.
 
 Ý tưởng tham khảo (không chép mã): dò khoảng lặng theo ngưỡng dB ([auto-editor](https://github.com/WyattBlue/auto-editor), Unlicense), reframe bám mặt có làm mượt ([auto-vertical-reframe](https://github.com/KazKozDev/auto-vertical-reframe), MIT). Dò beat, crossfade, ducking, karaoke đều tự viết hoặc dùng bộ lọc có sẵn của FFmpeg.
 

@@ -47,3 +47,11 @@ python harness/ags_anti_slop_guard.py shorts/<name>.mp4 --contact-sheet shorts/<
 ```
 Ô `#0 (khung 0)` phải thấy hook; mặt người nói trong khung; chữ trong khung hồng. Exit `0` đạt · `2` cảnh báo · `1` lỗi.
 Vòng soát: `harness/QUY-TRINH-KIEM-DINH.md`. Qua MCP: `clip_shorts_transcript` rồi `clip_shorts_cut`.
+
+## Lồng tiếng Việt cho video của PRO nước ngoài
+Muốn short tiếng Việt (bố cục trên/dưới, lồng một giọng, phụ đề theo giọng Việt, dòng nguồn suốt video, `knowledge.md`)
+thay vì cắt nguyên tiếng gốc: dùng `scripts/ags_pro_shorts.py` (spec `docs/pro-shorts-vi/`):
+```bash
+python scripts/ags_pro_shorts.py <URL|video.mp4> --voice vieneu --voice-name "Hải Đăng" --plan plan.json [--ab-first vieneu:"Trúc Ly"]
+```
+`plan.json` chọn đoạn theo cùng luật ở Bước 2, thêm `segments` (lời Việt) và `knowledge` (tóm tắt + 5–10 bài học có mốc `t`).
