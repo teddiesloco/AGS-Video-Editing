@@ -175,8 +175,21 @@ class AudioTimelineTest(unittest.TestCase):
         self.assertEqual(ps.build_timeline(30.0, 120.0, 160.0, 1500.0)["original_audio"], "off")
 
     def test_timeline_never_runs_past_source_end(self):
-        timeline = ps.build_timeline(40.0, 1480.0, 1500.0, 1500.0)
-        self.assertAlmostEqual(timeline["src_start"] + timeline["total"], 1500.0)
+        timeline = ps.build_timeline(38.0, 1460.0, 1500.0, 1500.0)
+        self.assertLessEqual(timeline["src_start"] + timeline["total"], 1500.0)
+
+    def test_timeline_stays_inside_selected_clip(self):
+        timeline = ps.build_timeline(30.0, 120.0, 160.0, 1500.0)
+        self.assertEqual(timeline["src_start"], 120.0)
+        self.assertLessEqual(timeline["total"], 40.0)
+        with self.assertRaises(ps.ProShortsError) as ctx:       # giọng dài hơn đoạn đã chọn: lỗi, không kéo qua mốc cuối
+            ps.build_timeline(50.0, 100.0, 140.0, 1500.0)
+        self.assertEqual(error_code(ctx), "E-pro-shorts-vi-006")
+
+    def test_voice_tempo_compresses_to_selected_clip(self):
+        tempo = ps.fit_voice_tempo(42.0, 40.0)
+        self.assertTrue(1.0 < tempo <= ps.MAX_VOICE_TEMPO)
+        self.assertLess(ps.VOICE_LEAD + 42.0 / tempo + ps.VOICE_TAIL, 40.0)
 
     def test_voice_tempo_fits_sixty_seconds_or_fails(self):
         self.assertEqual(ps.fit_voice_tempo(55.0), 1.0)
@@ -242,16 +255,20 @@ class ReviewRegressionTest(unittest.TestCase):
             ps.validate_plan(plan, 1500.0, 3)
         self.assertEqual(error_code(ctx), "E-pro-shorts-vi-003")
 
-    def test_long_source_line_fits_inside_safe_box(self):
+    def test_long_source_line_is_one_line_inside_safe_box(self):
         from PIL import ImageFont
-        source = "Nguồn: Alex Hormozi · kênh The Game with Alex Hormozi · lồng tiếng Việt"
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "short.ass"
-            ps.write_ass(path, ps.caption_cues(voice_words()), "Ba câu hỏi trước khi chào giá", source, 30.0)
-            row = next(r for r in dialogues(path.read_text(encoding="utf-8")) if r["style"] == "Source")
-        font = ImageFont.truetype(str(ps.FONT_CAPTION), row["size"])
-        for line in re.sub(r"\{[^}]*\}", "", row["text"]).split("\\N"):
-            self.assertLessEqual(font.getlength(line), ps.SOURCE_BOX[2] - ps.SOURCE_BOX[0])
+        sources = ["Nguồn: Alex Hormozi · kênh The Game with Alex Hormozi · lồng tiếng Việt",
+                   "Nguồn: " + "W" * 100 + " · lồng tiếng Việt"]
+        for source in sources:
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "short.ass"
+                ps.write_ass(path, ps.caption_cues(voice_words()), "Ba câu hỏi trước khi chào giá", source, 30.0)
+                row = next(r for r in dialogues(path.read_text(encoding="utf-8")) if r["style"] == "Source")
+            font = ImageFont.truetype(str(ps.FONT_CAPTION), row["size"])
+            lines = re.sub(r"\{[^}]*\}", "", row["text"]).split("\\N")
+            self.assertEqual(len(lines), 1)
+            self.assertLessEqual(font.getlength(lines[0]), ps.SOURCE_BOX[2] - ps.SOURCE_BOX[0])
+            self.assertLessEqual(row["size"] * 1.2, ps.SOURCE_BOX[3] - ps.SOURCE_BOX[1] + 8)
 
     def test_ab_first_rejects_engine_outside_allowlist(self):
         with mock.patch.object(ps, "acquire", side_effect=AssertionError("không được chạy tiếp")):
@@ -268,14 +285,31 @@ class ReviewRegressionTest(unittest.TestCase):
     def test_cached_transcript_of_another_file_is_not_reused(self):
         import types
         with tempfile.TemporaryDirectory() as tmp:
-            work = Path(tmp)
-            (work / "transcript.json").write_text('{"source": "/a/video.mp4", "model": "base", "duration": 1}', encoding="utf-8")
+            work = Path(tmp) / "w"; work.mkdir()
+            first, second = Path(tmp) / "a.mp4", Path(tmp) / "b.mp4"
+            first.write_bytes(b"1"); second.write_bytes(b"1")
             def fake(args):
-                Path(args.out).write_text('{"source": "%s", "model": "base", "duration": 2}' % args.input, encoding="utf-8")
-            fake_mod = types.SimpleNamespace(cmd_transcript=fake)
-            with mock.patch.dict(sys.modules, {"ags_clip_shorts": fake_mod}):
-                self.assertEqual(ps.transcribe(Path("/b/video.mp4"), work, "base")["duration"], 2)
-                self.assertEqual(ps.transcribe(Path("/b/video.mp4"), work, "base")["duration"], 2)
+                Path(args.out).write_text('{"source": "%s", "model": "base", "duration": %d}' % (args.input, 1 if args.input == str(first) else 2), encoding="utf-8")
+            with mock.patch.dict(sys.modules, {"ags_clip_shorts": types.SimpleNamespace(cmd_transcript=fake)}):
+                self.assertEqual(ps.transcribe(first, work, "base")["duration"], 1)
+                self.assertEqual(ps.transcribe(second, work, "base")["duration"], 2)
+
+    def test_replaced_video_or_changed_model_refreshes_transcript(self):
+        import types
+        calls = []
+        with tempfile.TemporaryDirectory() as tmp:
+            work, video = Path(tmp) / "w", Path(tmp) / "v.mp4"
+            work.mkdir()
+            def fake(args):
+                calls.append(args.model)
+                Path(args.out).write_text('{"source": "%s", "model": "%s", "duration": %d}' % (args.input, args.model, len(calls)), encoding="utf-8")
+            with mock.patch.dict(sys.modules, {"ags_clip_shorts": types.SimpleNamespace(cmd_transcript=fake)}):
+                video.write_bytes(b"aaaa")
+                self.assertEqual(ps.transcribe(video, work, "base")["duration"], 1)
+                self.assertEqual(ps.transcribe(video, work, "base")["duration"], 1)       # cache hit
+                video.write_bytes(b"bbbbbb")                                                # cùng đường dẫn, nội dung khác
+                self.assertEqual(ps.transcribe(video, work, "base")["duration"], 2)
+                self.assertEqual(ps.transcribe(video, work, "small")["duration"], 3)
 
 
 

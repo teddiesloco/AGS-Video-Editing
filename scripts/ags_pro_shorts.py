@@ -126,13 +126,18 @@ def acquire(source, work, args):
 
 def transcribe(video, work, model):
     out = work / "transcript.json"
+    stat = Path(video).stat()
+    fingerprint = [stat.st_size, stat.st_mtime_ns]   # thay nội dung cùng đường dẫn -> bóc băng lại
     if out.is_file():
         cached = json.loads(out.read_text(encoding="utf-8"))
-        if cached.get("source") == str(video) and cached.get("model") == model:
+        if cached.get("source") == str(video) and cached.get("model") == model and cached.get("fingerprint") == fingerprint:
             return cached
     import ags_clip_shorts
     ags_clip_shorts.cmd_transcript(argparse.Namespace(input=str(video), model=model, out=str(out)))
-    return json.loads(out.read_text(encoding="utf-8"))
+    result = json.loads(out.read_text(encoding="utf-8"))
+    result["fingerprint"] = fingerprint
+    out.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
+    return result
 
 
 # --------------------------------------------------------------------------- kế hoạch (chọn đoạn + dịch + kiến thức)
@@ -245,14 +250,16 @@ def split_segments(plan_item):
     return [nfc(s).strip() for s in plan_item["segments"] if s.strip()]
 
 
-def fit_voice_tempo(voice_seconds):
-    """Tốc độ nén giọng (>=1) để lead + giọng + tail <= MAX_SHORT_SECONDS; vượt MAX_VOICE_TEMPO -> lỗi (rút ngắn lời)."""
+def fit_voice_tempo(voice_seconds, clip_seconds=MAX_SHORT_SECONDS):
+    """Tốc độ nén giọng (>=1) để lead + giọng + tail nằm trong đoạn gốc đã chọn và <= MAX_SHORT_SECONDS;
+    vượt MAX_VOICE_TEMPO -> lỗi (rút ngắn lời)."""
+    limit = min(MAX_SHORT_SECONDS - 1.0, clip_seconds - 0.1)
     need = VOICE_LEAD + voice_seconds + VOICE_TAIL
-    if need <= MAX_SHORT_SECONDS - 1.0:
+    if need <= limit:
         return 1.0
-    tempo = voice_seconds / (MAX_SHORT_SECONDS - 1.0 - VOICE_LEAD - VOICE_TAIL)
+    tempo = voice_seconds / (limit - VOICE_LEAD - VOICE_TAIL)
     if tempo > MAX_VOICE_TEMPO:
-        fail("006", f"giọng Việt {voice_seconds:.1f}s quá dài cho short <= {MAX_SHORT_SECONDS:.0f}s (cần nén x{tempo:.2f})")
+        fail("006", f"giọng Việt {voice_seconds:.1f}s quá dài cho đoạn gốc {clip_seconds:.0f}s / short <= {MAX_SHORT_SECONDS:.0f}s (cần nén x{tempo:.2f})")
     return round(tempo, 3)
 
 
@@ -262,7 +269,9 @@ def build_timeline(voice_seconds, clip_start, clip_end, source_seconds):
     total = round(VOICE_LEAD + voice_seconds + VOICE_TAIL, 3)
     if total > MAX_SHORT_SECONDS:
         fail("006", f"short {total:.1f}s vượt {MAX_SHORT_SECONDS:.0f}s")
-    start = min(clip_start, max(0.0, source_seconds - total))
+    if total > clip_end - clip_start + 0.01:
+        fail("006", f"short {total:.1f}s dài hơn đoạn gốc đã chọn {clip_end - clip_start:.1f}s")
+    start = clip_start                      # không dịch mốc đầu, không vượt mốc cuối của đoạn đã chọn
     if start + total > source_seconds + 0.01:
         fail("006", "video nguồn ngắn hơn short cần dựng")
     mode = "ducked" if abs(total - (clip_end - clip_start)) <= MISMATCH_SECONDS else "off"
@@ -337,6 +346,19 @@ def _emphasis(line):
     return " ".join(f"{mark}{ass_text(w)}{reset}" if re.search(r"\d", w) else ass_text(w) for w in line.split())
 
 
+def fit_source(source):
+    """(từ, cỡ chữ, dòng): dòng nguồn luôn đúng 1 dòng trong SOURCE_BOX (cao 40 px, rộng 840 px); hạ cỡ chữ tới 22,
+    còn dài thì bỏ bớt từ cuối + '…' cho tới khi vừa."""
+    words = nfc(source).split()
+    limit = (SOURCE_BOX[2] - SOURCE_BOX[0]) / FIT_MARGIN
+    while True:
+        size, _, lines = fit_layout(words, "bold", 34, 0, limit, 1, 22, FONT_CAPTION)
+        if len(lines) == 1 or len(words) <= 1:
+            return words, size, lines
+        words = words[:-1]
+        words[-1] = words[-1].rstrip("…") + "…" if not words[-1].endswith("…") else words[-1]
+
+
 def write_ass(path, cues, hook, source, total):
     """ASS 1080x1920: hook (Bricolage, nền neon) + dòng nguồn (xanh) suốt video; phụ đề Be Vietnam Pro ở giữa nửa dưới."""
     hook_words = nfc(hook).upper().split()
@@ -350,8 +372,7 @@ def write_ass(path, cues, hook, source, total):
     cx = W // 2
     hy = (HOOK_BOX[1] + HOOK_BOX[3]) // 2
     cy = (CAPTION_BOX[1] + CAPTION_BOX[3]) // 2
-    src_words = nfc(source).split()
-    src_size, _, src_lines = fit_layout(src_words, "bold", 34, 0, (SOURCE_BOX[2] - SOURCE_BOX[0]) / FIT_MARGIN, 2, 24, FONT_CAPTION)
+    src_words, src_size, src_lines = fit_source(source)
     src_text = "\\N".join(ass_text(" ".join(src_words[i] for i in line)) for line in src_lines)
     sy = SOURCE_BOX[3] - round(len(src_lines) * src_size * 1.2 / 2)
     events = [f"Dialogue: 1,{format_ass_time(0)},{format_ass_time(total)},Hook,,0,0,0,,{{\\an5\\pos({cx},{hy})}}{hook_text}",
@@ -389,7 +410,7 @@ def render_short(video, item, meta, engine, voice, tmp, out_mp4, args):
     script = " ".join(segments)
     raw_wav = Path(tmp) / "vo_raw.wav"
     voice_seconds = synth_voice(engine, voice, script, raw_wav)
-    tempo = fit_voice_tempo(voice_seconds)
+    tempo = fit_voice_tempo(voice_seconds, item["end"] - item["start"])
     wav = raw_wav
     if tempo != 1.0:
         wav = Path(tmp) / "vo.wav"
