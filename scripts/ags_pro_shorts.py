@@ -354,6 +354,13 @@ def fit_source(source):
     while True:
         size, font, lines = fit_layout(words, "bold", 34, 0, limit, 1, 22, FONT_CAPTION)
         if len(lines) == 1 and font.getlength(" ".join(words)) <= limit:
+            from PIL import ImageFont
+            box_h = SOURCE_BOX[3] - SOURCE_BOX[1]
+            while size > 16:                       # dấu chồng của tiếng Việt cao hơn cỡ chữ: hạ cỡ tới khi glyph vừa hộp
+                top, bottom = ImageFont.truetype(str(FONT_CAPTION), size).getbbox(" ".join(words))[1::2]
+                if bottom - top <= box_h:
+                    break
+                size -= 1
             return words, size, lines
         if len(words) > 1:
             words = words[:-1]

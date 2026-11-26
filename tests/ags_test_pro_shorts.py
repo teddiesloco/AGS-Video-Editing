@@ -258,7 +258,7 @@ class ReviewRegressionTest(unittest.TestCase):
     def test_long_source_line_is_one_line_inside_safe_box(self):
         from PIL import ImageFont
         sources = ["Nguồn: Alex Hormozi · kênh The Game with Alex Hormozi · lồng tiếng Việt",
-                   "Nguồn: " + "W" * 100 + " · lồng tiếng Việt", "W" * 100]
+                   "Nguồn: " + "W" * 100 + " · lồng tiếng Việt", "W" * 100, "ẮẶỄỘỮ" * 20]
         for source in sources:
             with tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp) / "short.ass"
@@ -268,7 +268,8 @@ class ReviewRegressionTest(unittest.TestCase):
             lines = re.sub(r"\{[^}]*\}", "", row["text"]).split("\\N")
             self.assertEqual(len(lines), 1)
             self.assertLessEqual(font.getlength(lines[0]), ps.SOURCE_BOX[2] - ps.SOURCE_BOX[0])
-            self.assertLessEqual(row["size"] * 1.2, ps.SOURCE_BOX[3] - ps.SOURCE_BOX[1] + 8)
+            top, bottom = font.getbbox(lines[0])[1::2]
+            self.assertLessEqual(bottom - top, ps.SOURCE_BOX[3] - ps.SOURCE_BOX[1])
 
     def test_ab_first_rejects_engine_outside_allowlist(self):
         with mock.patch.object(ps, "acquire", side_effect=AssertionError("không được chạy tiếp")):
