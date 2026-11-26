@@ -131,15 +131,16 @@ def smooth_path(track, crop_frac):
     return list(zip(times, smooth))
 
 
-def reframe_filter(video_path, start, duration, workdir):
-    """Chuỗi bộ lọc FFmpeg đưa đoạn [start, start + duration) về 1080x1920 (bám mặt nếu video ngang)."""
+def reframe_filter(video_path, start, duration, workdir, out_size=(OUT_W, OUT_H)):
+    """Chuỗi bộ lọc FFmpeg đưa đoạn [start, start + duration) về `out_size` (mặc định 1080x1920), bám mặt nếu video rộng hơn khung."""
+    out_w, out_h = out_size
     info = video_info(video_path)
     width, height = info["size"]
-    if width * 16 <= height * 9 + 1:
-        print("[*] Video đã là dạng dọc — chỉ đổi cỡ về 1080x1920.")
-        return (f"scale={OUT_W}:{OUT_H}:force_original_aspect_ratio=decrease,"
-                f"pad={OUT_W}:{OUT_H}:(ow-iw)/2:(oh-ih)/2,setsar=1")
-    crop_w = int(round(height * 9 / 16 / 2) * 2)
+    if width * out_h <= height * out_w + 1:
+        print(f"[*] Video đã đủ hẹp — chỉ đổi cỡ về {out_w}x{out_h}.")
+        return (f"scale={out_w}:{out_h}:force_original_aspect_ratio=decrease,"
+                f"pad={out_w}:{out_h}:(ow-iw)/2:(oh-ih)/2,setsar=1")
+    crop_w = int(round(height * out_w / out_h / 2) * 2)
     crop_frac = crop_w / width
     track = face_track(video_path, start, duration, (width, height))
     path = smooth_path(track, crop_frac) if track else None
@@ -147,7 +148,7 @@ def reframe_filter(video_path, start, duration, workdir):
         if track is not None:
             print("⚠️ Không thấy khuôn mặt nào — dùng crop chính giữa.")
         x = (width - crop_w) // 2
-        return f"crop={crop_w}:{height}:{x}:0,scale={OUT_W}:{OUT_H}:flags=lanczos,setsar=1"
+        return f"crop={crop_w}:{height}:{x}:0,scale={out_w}:{out_h}:flags=lanczos,setsar=1"
     found = sum(1 for _, c in track if c is not None)
     print(f"[+] Thấy mặt ở {found}/{len(track)} khung mẫu; khung cắt {crop_w}x{height} bám theo mặt.")
     times = np.array([t for t, _ in path])
@@ -160,7 +161,7 @@ def reframe_filter(video_path, start, duration, workdir):
     commands = Path(workdir) / "reframe_cmds.txt"
     commands.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return (f"sendcmd=f='{filter_path(commands)}',crop@ags=w={crop_w}:h={height}:x={xs[0]}:y=0,"
-            f"scale={OUT_W}:{OUT_H}:flags=lanczos,setsar=1")
+            f"scale={out_w}:{out_h}:flags=lanczos,setsar=1")
 
 
 def reframe(video_path, output_path):

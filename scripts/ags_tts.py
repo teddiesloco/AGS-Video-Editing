@@ -190,6 +190,16 @@ sys.stdout.buffer.write(raw)
 '''
 
 
+_VIENEU = []  # một engine cho cả tiến trình: nạp model ~vài giây, pipeline gọi nhiều lần
+
+
+def _vieneu_engine():
+    if not _VIENEU:
+        from vieneu import Vieneu
+        _VIENEU.append(Vieneu(mode="v3turbo", backend="onnx", device="cpu", precision="fp32"))
+    return _VIENEU[0]
+
+
 def generate(engine, text=None, voice=None, output=None, style=None):
     if text is not None and not text.strip():
         raise ValueError("Text must not be empty")
@@ -202,8 +212,7 @@ def generate(engine, text=None, voice=None, output=None, style=None):
     if text is not None:
         text = normalize_vietnamese_tts_text(text)
     if engine == "vieneu":
-        from vieneu import Vieneu
-        tts = Vieneu(mode="v3turbo", backend="onnx", device="cpu", precision="fp32")
+        tts = _vieneu_engine()
         voices = tts.list_preset_voices()
         names = [v[1] if isinstance(v, (tuple, list)) else v for v in voices]
         if voice is not None and voice not in names:

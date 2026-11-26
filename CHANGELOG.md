@@ -2,6 +2,13 @@
 
 ## Chưa phát hành
 **Mới**
+- AGS Pro Shorts VI (`scripts/ags_pro_shorts.py`, spec `docs/pro-shorts-vi/`): một lệnh biến video dài của một PRO nước ngoài
+  (URL hoặc file + `.info.json`) thành 3–5 short 9:16 lồng tiếng Việt MỘT giọng (VieNeu cục bộ hoặc Gemini khi có khoá),
+  bố cục trên/dưới (clip gốc bám mặt ở trên; hook, phụ đề Việt theo mốc giọng, dòng nguồn ở dưới, màu/font AgentSea),
+  tiếng gốc ducking -21 dB, SFX nhẹ, -14 LUFS, guard + contact sheet, kèm `knowledge.md` (tóm tắt + bài học có mốc thời
+  gian) và caption gợi ý ghi nguồn. Chọn đoạn + dịch qua `--plan plan.json` hoặc Gemini; `--ab-first` render thêm short #1
+  bằng giọng thứ hai để chọn giọng kênh. Mã lỗi E-pro-shorts-vi-001..011. `ags_reframe.reframe_filter` nhận `out_size`;
+  `ags_tts` giữ một engine VieNeu trong tiến trình. Đóng gói font Be Vietnam Pro + Bricolage Grotesque (OFL 1.1).
 - AGS Marketing Editor: skill `skills/ags-marketing-editor/SKILL.md` hướng dẫn agent bóc băng nguồn cục bộ, chọn ý
   marketing/giáo dục/bán hàng có căn cứ, tự viết plan JSON và xử lý sửa bằng lời thường. Chủ duyệt plan trước nháp và
   duyệt nháp trước final; thay nguồn/transcript/font/nội dung cần duyệt lại. Không gọi API trả phí, upload hay đăng video.
