@@ -386,7 +386,9 @@ class SquareBilingualTest(unittest.TestCase):
             src, out = Path(tmp) / "src.mp4", Path(tmp) / "reel.mp4"
             ps.run_cmd(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=s=1920x1080:r=30:d=7",
                         "-f", "lavfi", "-i", "sine=f=330:d=7", "-c:v", "libx264", "-c:a", "aac", "-shortest", src])
-            entry = ps.render_square(src, self.item(), self.META, tmp, out)
+            work = Path(tmp) / "it's a dir"                                   # dấu nháy đơn trong đường dẫn không được làm vỡ bộ lọc
+            work.mkdir()
+            entry = ps.render_square(src, self.item(), self.META, work, out)
             check = ps.check_output(out, f"{ps.SQ}x{ps.SQ}")
         self.assertEqual((check["size"], check["video"], check["audio"]), ("1080x1080", "h264", "aac"))
         self.assertLessEqual(check["duration"], 60)

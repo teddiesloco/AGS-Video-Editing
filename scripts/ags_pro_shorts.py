@@ -583,12 +583,17 @@ def write_ass_square(path, item, source):
                           % (SQ, SQ, "\n".join(styles), "\n".join(events)), encoding="utf-8")
 
 
+def _q(path):
+    """Đường dẫn trong chuỗi nháy đơn của bộ lọc FFmpeg: escape \\, ' và ':'."""
+    return str(path).replace("\\", "\\\\").replace("'", "'\\\\\\''").replace(":", "\\:")
+
+
 def render_square(video, item, meta, tmp, out_mp4):
     """Một Reel vuông 1080x1080 từ đoạn [start,end] của video gốc, giữ nguyên tiếng gốc -> out_mp4. Trả dict báo cáo."""
     start, total = float(item["start"]), round(float(item["end"]) - float(item["start"]), 3)
     ass = Path(tmp) / "square.ass"
     write_ass_square(ass, item, source_line(meta, "giữ tiếng gốc · phụ đề Việt"))
-    fonts = str(FONTS).replace(":", "\\:")
+    fonts = _q(FONTS)
     paper, green, neon = (c.replace("#", "0x") for c in (PAPER, GREEN, NEON))
     graph = (f"color=c={paper}:s={SQ}x{SQ}:r={FPS}:d={total}[bg];"
              f"[0:v]scale={SQ}:{SQ_CLIP_H}:force_original_aspect_ratio=increase,crop={SQ}:{SQ_CLIP_H},fps={FPS}[clip];"
@@ -597,7 +602,7 @@ def render_square(video, item, meta, tmp, out_mp4):
              f"drawbox=x=0:y={SQ_BAND_Y}:w={SQ}:h=8:color={neon}:t=fill,"
              f"drawbox=x=0:y={SQ_TITLE_H}:w={SQ}:h={SQ_CLIP_H}:color={green}:t=3,"
              f"drawbox=x={SQ // 2 - 80}:y={SQ_TITLE_H - 24}:w=160:h=8:color={neon}:t=fill,"
-             f"subtitles='{str(ass).replace(':', chr(92) + ':')}':fontsdir='{fonts}',format=yuv420p[v];"
+             f"subtitles='{_q(ass)}':fontsdir='{fonts}',format=yuv420p[v];"
              "[0:a]aresample=48000[a]")
     raw = Path(tmp) / "composed.mp4"
     run_cmd(["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.3f}", "-t", f"{total}", "-i", video, "-filter_complex", graph,
