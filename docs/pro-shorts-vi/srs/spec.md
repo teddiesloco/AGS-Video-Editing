@@ -25,6 +25,7 @@ Nguồn: lời Teddy 26/11/2026 trong brief `_project/cos/briefs/reels-pro.md` (
 | `FR-pro-shorts-vi-007` | Brief 26/11 | Tiếng gốc giảm -21 dB khi clip gốc và giọng Việt lệch ≤4 s, ngược lại tắt; SFX nhẹ ở hook và tối đa 3 lần chuyển ý; chuẩn hoá -14 LUFS. | Ducking ngoài -24..-18 dB: `E-pro-shorts-vi-007`. | `P0` |
 | `FR-pro-shorts-vi-008` | Brief 26/11 | Mỗi short có `short-NN.mp4`, `short-NN_sheet.jpg`, `short-NN.caption.txt`; cả lần chạy có `plan.json`, `knowledge.md`, `report.json`. | Short sai định dạng: `E-pro-shorts-vi-009`; guard báo lỗi: `E-pro-shorts-vi-011`. | `P0` |
 | `FR-pro-shorts-vi-009` | Brief 26/11 | `knowledge.md` có tên PRO, kênh, link gốc, tóm tắt Việt, 5–10 bài học cho chủ HKD/OPC Việt kèm link mốc `?t=<giây>s`, danh sách short đã dựng. | Lấy từ `knowledge` của plan. | `P0` |
+| `FR-pro-shorts-vi-010` | Teddy 26/11 (mẫu Nhật Dương) | `--layout square-bilingual` (cần `--plan`): khung vuông 1080x1080, GIỮ tiếng gốc (không TTS, ducking, SFX, nhạc); tiêu đề 2 dòng (`title_lines`, vế hook trong cặp `*`, tô `#1f6f3d`) trên nền `#f4f4ef`; clip 16:9 viền mảnh; phụ đề đôi đốt cứng (Việt to `#a8ff3e` ≤2 dòng, Anh nhỏ 1 dòng bên dưới); dải đáy `#1f6f3d` + vạch neon, chứa dòng nguồn suốt video và chỗ để logo/CTA. | Mỗi short ≤60 s; tiêu đề ≤9 chữ; mỗi cue có `t0`,`t1`,`vi`,`en` trong đoạn; lỗi `E-pro-shorts-vi-012`, `E-pro-shorts-vi-013`. Không dùng màu cam của mẫu. | `P0` |
 
 ## 2. Quy tắc nghiệp vụ
 
@@ -60,6 +61,8 @@ Nguồn: lời Teddy 26/11/2026 trong brief `_project/cos/briefs/reels-pro.md` (
 | `E-pro-shorts-vi-009` | `BR-pro-shorts-vi-004` | MP4 sai định dạng, dài quá 60 s, loudness ngoài -14 ±1 LUFS, true peak > -1 dBTP, hoặc không đo được. | Giữ file để chẩn đoán, lệnh trả mã khác 0. | `P0` |
 | `E-pro-shorts-vi-010` | `NFR-pro-shorts-vi-001` | Thiếu ffmpeg/ffprobe trong PATH. | Cài ffmpeg có libass. | `P0` |
 | `E-pro-shorts-vi-011` | `FR-pro-shorts-vi-008` | Guard chất lượng (`harness/ags_anti_slop_guard.py`) báo lỗi trên short. | In tên short, giữ MP4 + contact sheet, lệnh trả mã khác 0. | `P0` |
+| `E-pro-shorts-vi-012` | `FR-pro-shorts-vi-010` | `--layout` lạ, thiếu `--plan`/dùng `--ab-first` với layout vuông, plan vuông sai cấu trúc (title_lines, cues, mốc), short >60 s hoặc <5 s. | Sửa lệnh/plan; thoát trước khi render. | `P0` |
+| `E-pro-shorts-vi-013` | `FR-pro-shorts-vi-010` | Chữ tiêu đề hoặc phụ đề Việt (≤2 dòng)/Anh (1 dòng) không vừa khung vuông. | Rút ngắn hoặc tách cue. | `P0` |
 
 Local commands: `ags_pro_shorts` (scripts/ags_pro_shorts.py) chạy trọn chuỗi tải → bóc băng → kế hoạch → lồng tiếng → dựng → kiểm → kho kiến thức; `voices` (scripts/ags_tts.py voices --engine vieneu) liệt kê giọng preset để chọn `--voice-name`.
 

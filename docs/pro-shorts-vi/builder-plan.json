@@ -18,8 +18,8 @@
         "ags-context-engineering"
       ],
       "tasks": [
-        "Lock scope from docs/pro-shorts-vi/srs/spec.md: 6 BR, 11 error codes",
-        "Confirm 0 screen(s), 7 local CLI/MCP interface(s), 1 user story file(s) before coding"
+        "Lock scope from docs/pro-shorts-vi/srs/spec.md: 6 BR, 13 error codes",
+        "Confirm 0 screen(s), 8 local CLI/MCP interface(s), 1 user story file(s) before coding"
       ]
     },
     {
@@ -61,9 +61,10 @@
         "Implement local CLI/MCP interface: Surface: pro-shorts-render; CLI: ags_pro_shorts; MCP: none; Input: plan.json, --voice, --voice-name, --ab-first, --align-model; Output: short-NN.mp4, short-NN_sheet.jpg, short-NN.caption.txt; Persistence: out/slug/short-01.mp4, out/slug/short-01_sheet.jpg, out/slug/short-01.caption.txt; Errors: E-pro-shorts-vi-006, E-pro-shorts-vi-007, E-pro-shorts-vi-008",
         "Implement local CLI/MCP interface: Surface: pro-shorts-check; CLI: ags_pro_shorts; MCP: none; Input: short-NN.mp4; Output: report.json (ffprobe, lufs, true_peak, guard_exit); Persistence: out/slug/report.json; Errors: E-pro-shorts-vi-009, E-pro-shorts-vi-011",
         "Implement local CLI/MCP interface: Surface: pro-shorts-knowledge; CLI: ags_pro_shorts; MCP: none; Input: plan.json knowledge, meta; Output: knowledge.md; Persistence: out/slug/knowledge.md; Errors: E-pro-shorts-vi-004",
+        "Implement local CLI/MCP interface: Surface: pro-shorts-square; CLI: ags_pro_shorts; MCP: none; Input: video path, --layout square-bilingual, --plan plan.json (shorts[name,start,end,title_lines,cues[t0,t1,vi,en]]); Output: reel-NN-slug.mp4 (1080x1080), reel-NN-slug_sheet.jpg, reel-NN-slug.caption.txt, report.json; Persistence: out/slug/reel-01.mp4, out/slug/reel-01_sheet.jpg, out/slug/reel-01.caption.txt; Errors: E-pro-shorts-vi-012, E-pro-shorts-vi-013, E-pro-shorts-vi-009, E-pro-shorts-vi-011",
         "Implement local CLI/MCP interface: Surface: pro-shorts-voices; CLI: voices; MCP: none; Input: --engine vieneu; Output: danh sách [nhãn, tên giọng]; Persistence: none (read-only); Errors: E-pro-shorts-vi-008",
         "Enforce business rules: BR-pro-shorts-vi-001, BR-pro-shorts-vi-002, BR-pro-shorts-vi-003, BR-pro-shorts-vi-004, BR-pro-shorts-vi-005, BR-pro-shorts-vi-006",
-        "Return error codes: E-pro-shorts-vi-001, E-pro-shorts-vi-002, E-pro-shorts-vi-003, E-pro-shorts-vi-004, E-pro-shorts-vi-005, E-pro-shorts-vi-006, E-pro-shorts-vi-007, E-pro-shorts-vi-008, E-pro-shorts-vi-009, E-pro-shorts-vi-010, E-pro-shorts-vi-011"
+        "Return error codes: E-pro-shorts-vi-001, E-pro-shorts-vi-002, E-pro-shorts-vi-003, E-pro-shorts-vi-004, E-pro-shorts-vi-005, E-pro-shorts-vi-006, E-pro-shorts-vi-007, E-pro-shorts-vi-008, E-pro-shorts-vi-009, E-pro-shorts-vi-010, E-pro-shorts-vi-011, E-pro-shorts-vi-012, E-pro-shorts-vi-013"
       ]
     },
     {
@@ -84,7 +85,7 @@
         "ags-ship"
       ],
       "tasks": [
-        "Automate docs/pro-shorts-vi/userstories/us-001.md: 10 Given/When/Then scenario(s) via E2E",
+        "Automate docs/pro-shorts-vi/userstories/us-001.md: 11 Given/When/Then scenario(s) via E2E",
         "Review diff against srs/spec.md, api-map.md and the prototype before merge"
       ]
     }
@@ -95,8 +96,8 @@
     "docs/pro-shorts-vi/userstories/us-001.md"
   ],
   "sha256": {
-    "docs/pro-shorts-vi/srs/spec.md": "sha256:8ccc427eee0071089a715c732e915acf824ae17b60c8b14b6c8c521a728ca583",
-    "docs/pro-shorts-vi/api/api-map.md": "sha256:2d2a118f5af73ed23d93fc18c12c6d7d6f0e548854ab9989d1c5c7803bb0b505",
-    "docs/pro-shorts-vi/userstories/us-001.md": "sha256:4a4487c6ece60162fef6613d15c5c3f8e596bddbb345d5fd89a8cfb7045d2c76"
+    "docs/pro-shorts-vi/userstories/us-001.md": "sha256:c88df095bed1f4401cf4cf0d6a600bbfe0cbbfff45bfbdccb2693147bb0e8eae",
+    "docs/pro-shorts-vi/srs/spec.md": "sha256:d16de50d7319ef2a2b6198010a3b9b87fc4c2c9c3ceb2dd95907b0662fb9cfb5",
+    "docs/pro-shorts-vi/api/api-map.md": "sha256:faf36d50898aea03f5679dbf44f2405f9ebeb79551bb2210ce960124c78a0dac"
   }
 }
