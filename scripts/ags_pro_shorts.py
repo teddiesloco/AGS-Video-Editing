@@ -542,6 +542,8 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     try:
+        if args.ab_first and args.ab_first.partition(":")[0] not in AB_ENGINES:
+            fail("003", f"--ab-first chỉ nhận engine {sorted(AB_ENGINES)} (ZeroTTS chỉ để demo, không dùng cho sản phẩm): {args.ab_first!r}")
         for tool in ("ffmpeg", "ffprobe"):
             if not shutil.which(tool):
                 fail("010", f"thiếu {tool} trong PATH")
@@ -562,8 +564,6 @@ def main(argv=None):
         jobs = [(i, args.voice, voice) for i in range(1, len(plan["shorts"]) + 1)]
         if args.ab_first:
             engine, _, name = args.ab_first.partition(":")
-            if engine not in AB_ENGINES:
-                fail("003", f"--ab-first chỉ nhận engine {sorted(AB_ENGINES)} (ZeroTTS chỉ để demo, không dùng cho sản phẩm): {engine!r}")
             jobs.append((1, engine, name or None))
         report = {"source": meta, "shorts": []}
         failed = False

@@ -8,6 +8,7 @@ plan_with_llm với LLM giả.
 Chạy:  python -m pytest -q tests/ags_test_pro_shorts.py
 """
 
+import contextlib, io
 import os
 import re
 import sys
@@ -251,6 +252,13 @@ class ReviewRegressionTest(unittest.TestCase):
         font = ImageFont.truetype(str(ps.FONT_CAPTION), row["size"])
         for line in re.sub(r"\{[^}]*\}", "", row["text"]).split("\\N"):
             self.assertLessEqual(font.getlength(line), ps.SOURCE_BOX[2] - ps.SOURCE_BOX[0])
+
+    def test_ab_first_rejects_engine_outside_allowlist(self):
+        with mock.patch.object(ps, "acquire", side_effect=AssertionError("không được chạy tiếp")):
+            with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()) as err:
+                rc = ps.main(["/tmp/x.mp4", "--ab-first", "zerotts:Nam"])
+        self.assertNotEqual(rc, 0)
+        self.assertIn("E-pro-shorts-vi-003", out.getvalue() + err.getvalue())
 
     def test_video_id_from_metadata_is_one_safe_path_component(self):
         meta = ps.meta_from_info({"id": "../../etc/x", "channel": "C"})
