@@ -208,7 +208,7 @@ class PlanTest(unittest.TestCase):
             ps.validate_plan(good_plan(), 1500.0, 4)
 
     def test_plan_with_fake_llm_maps_picks_to_sentence_times(self):
-        sentences = [{"id": i, "start": 6.0 * i, "end": 6.0 * i + 5.8, "text": f"English sentence {i}."} for i in range(15)]
+        sentences = [{"id": i, "start": 8.0 * i, "end": 8.0 * i + 7.8, "text": f"English sentence {i}."} for i in range(15)]
         prompts = []
 
         def llm(prompt):
@@ -221,8 +221,8 @@ class PlanTest(unittest.TestCase):
             return {"summary": "Tóm tắt.", "lessons": [{"title": f"B{i}", "body": "Áp dụng.", "t": 10 * i} for i in range(5)]}
 
         meta = {"pro": "Alex Hormozi", "title": "Sales", "channel": "Alex Hormozi", "url": "https://youtu.be/x"}
-        plan = ps.plan_with_llm({"sentences": sentences, "duration": 90.0}, meta, 3, llm=llm)
-        self.assertEqual([(s["start"], s["end"]) for s in plan["shorts"]], [(0.0, 29.8), (30.0, 59.8), (60.0, 89.8)])
+        plan = ps.plan_with_llm({"sentences": sentences, "duration": 120.0}, meta, 3, llm=llm)
+        self.assertEqual([(s["start"], s["end"]) for s in plan["shorts"]], [(0.0, 39.8), (40.0, 79.8), (80.0, 119.8)])
         self.assertEqual(plan["shorts"][0]["hook"], "HỎI TRƯỚC RỒI MỚI BÁN")
         self.assertIn("English sentence 5.", prompts[2])
         self.assertNotIn("English sentence 4.", prompts[2])
@@ -233,6 +233,42 @@ class PlanTest(unittest.TestCase):
             with self.assertRaises(ps.ProShortsError) as ctx:
                 ps.gemini_json("x")
         self.assertEqual(error_code(ctx), "E-pro-shorts-vi-005")
+
+class ReviewRegressionTest(unittest.TestCase):
+    def test_clip_shorter_than_30s_rejected(self):
+        plan = good_plan(); plan["shorts"][0]["end"] = plan["shorts"][0]["start"] + 20.0
+        with self.assertRaises(ps.ProShortsError) as ctx:
+            ps.validate_plan(plan, 1500.0, 3)
+        self.assertEqual(error_code(ctx), "E-pro-shorts-vi-003")
+
+    def test_long_source_line_fits_inside_safe_box(self):
+        from PIL import ImageFont
+        source = "Nguồn: Alex Hormozi · kênh The Game with Alex Hormozi · lồng tiếng Việt"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "short.ass"
+            ps.write_ass(path, ps.caption_cues(voice_words()), "Ba câu hỏi trước khi chào giá", source, 30.0)
+            row = next(r for r in dialogues(path.read_text(encoding="utf-8")) if r["style"] == "Source")
+        font = ImageFont.truetype(str(ps.FONT_CAPTION), row["size"])
+        for line in re.sub(r"\{[^}]*\}", "", row["text"]).split("\\N"):
+            self.assertLessEqual(font.getlength(line), ps.SOURCE_BOX[2] - ps.SOURCE_BOX[0])
+
+    def test_video_id_from_metadata_is_one_safe_path_component(self):
+        meta = ps.meta_from_info({"id": "../../etc/x", "channel": "C"})
+        self.assertNotIn("/", meta["id"])
+        self.assertNotIn("..", meta["id"])
+
+    def test_cached_transcript_of_another_file_is_not_reused(self):
+        import types
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            (work / "transcript.json").write_text('{"source": "/a/video.mp4", "model": "base", "duration": 1}', encoding="utf-8")
+            def fake(args):
+                Path(args.out).write_text('{"source": "%s", "model": "base", "duration": 2}' % args.input, encoding="utf-8")
+            fake_mod = types.SimpleNamespace(cmd_transcript=fake)
+            with mock.patch.dict(sys.modules, {"ags_clip_shorts": fake_mod}):
+                self.assertEqual(ps.transcribe(Path("/b/video.mp4"), work, "base")["duration"], 2)
+                self.assertEqual(ps.transcribe(Path("/b/video.mp4"), work, "base")["duration"], 2)
+
 
 
 class KnowledgeTest(unittest.TestCase):

@@ -45,7 +45,8 @@ MARGIN_X = 120
 FIT_MARGIN = 1.1             # dự phòng chênh số đo Pillow so với libass
 
 MAX_SHORT_SECONDS = 60.0     # bản quyền + nền tảng: mỗi short <= 60 s
-MIN_CLIP_SECONDS, MAX_CLIP_SECONDS = 20.0, 58.0
+MIN_CLIP_SECONDS, MAX_CLIP_SECONDS = 30.0, 58.0
+AB_ENGINES = {"vieneu", "gemini"}
 VOICE_LEAD, VOICE_TAIL = 0.20, 0.60
 MAX_VOICE_TEMPO = 1.20
 MISMATCH_SECONDS = 4.0       # clip gốc và giọng Việt lệch hơn mức này -> tắt hẳn tiếng gốc
@@ -86,7 +87,8 @@ def source_line(meta):
 
 def meta_from_info(info, pro=None):
     channel = info.get("channel") or info.get("uploader") or ""
-    return {"id": info.get("id", ""), "title": info.get("title", ""), "channel": channel,
+    video_id = re.sub(r"[^A-Za-z0-9_-]", "_", str(info.get("id", "")))[:64]  # một thành phần đường dẫn an toàn
+    return {"id": video_id, "title": info.get("title", ""), "channel": channel,
             "pro": pro or channel, "url": info.get("webpage_url") or info.get("original_url") or "",
             "duration": info.get("duration")}
 
@@ -124,9 +126,12 @@ def acquire(source, work, args):
 
 def transcribe(video, work, model):
     out = work / "transcript.json"
-    if not out.is_file():
-        import ags_clip_shorts
-        ags_clip_shorts.cmd_transcript(argparse.Namespace(input=str(video), model=model, out=str(out)))
+    if out.is_file():
+        cached = json.loads(out.read_text(encoding="utf-8"))
+        if cached.get("source") == str(video) and cached.get("model") == model:
+            return cached
+    import ags_clip_shorts
+    ags_clip_shorts.cmd_transcript(argparse.Namespace(input=str(video), model=model, out=str(out)))
     return json.loads(out.read_text(encoding="utf-8"))
 
 
@@ -344,10 +349,13 @@ def write_ass(path, cues, hook, source, total):
     ]
     cx = W // 2
     hy = (HOOK_BOX[1] + HOOK_BOX[3]) // 2
-    sy = (SOURCE_BOX[1] + SOURCE_BOX[3]) // 2
     cy = (CAPTION_BOX[1] + CAPTION_BOX[3]) // 2
+    src_words = nfc(source).split()
+    src_size, _, src_lines = fit_layout(src_words, "bold", 34, 0, (SOURCE_BOX[2] - SOURCE_BOX[0]) / FIT_MARGIN, 2, 24, FONT_CAPTION)
+    src_text = "\\N".join(ass_text(" ".join(src_words[i] for i in line)) for line in src_lines)
+    sy = SOURCE_BOX[3] - round(len(src_lines) * src_size * 1.2 / 2)
     events = [f"Dialogue: 1,{format_ass_time(0)},{format_ass_time(total)},Hook,,0,0,0,,{{\\an5\\pos({cx},{hy})}}{hook_text}",
-              f"Dialogue: 0,{format_ass_time(0)},{format_ass_time(total)},Source,,0,0,0,,{{\\an5\\pos({cx},{sy})}}{ass_text(source)}"]
+              f"Dialogue: 0,{format_ass_time(0)},{format_ass_time(total)},Source,,0,0,0,,{{\\an5\\pos({cx},{sy})\\fs{src_size}}}{src_text}"]
     for cue in cues:
         size, lines = layout_cue(cue["words"])
         body = "\\N".join(_emphasis(line) for line in lines)
@@ -554,6 +562,8 @@ def main(argv=None):
         jobs = [(i, args.voice, voice) for i in range(1, len(plan["shorts"]) + 1)]
         if args.ab_first:
             engine, _, name = args.ab_first.partition(":")
+            if engine not in AB_ENGINES:
+                fail("003", f"--ab-first chỉ nhận engine {sorted(AB_ENGINES)} (ZeroTTS chỉ để demo, không dùng cho sản phẩm): {engine!r}")
             jobs.append((1, engine, name or None))
         report = {"source": meta, "shorts": []}
         failed = False
