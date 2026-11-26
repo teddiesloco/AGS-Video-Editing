@@ -9,6 +9,10 @@ Chuỗi: tải (yt-dlp) -> bóc băng từng từ (ags_clip_shorts) -> chọn đ
 dưới (màu/font brand AgentSea) -> ducking tiếng gốc + SFX nhẹ (ags_sfx) -> -14 LUFS -> guard + contact sheet ->
 knowledge.md. Không đăng, không đăng nhập tài khoản nào.
 
+Chế độ --layout square-bilingual (mẫu Nhật Dương): khung vuông 1080x1080, GIỮ tiếng gốc (không TTS/ducking/SFX), tiêu đề 2 dòng
++ clip viền mảnh + phụ đề đôi đốt cứng (Việt to, Anh nhỏ) + dải đáy brand + dòng nguồn suốt video; bắt buộc --plan (title_lines,
+cues), mỗi short <= 60 s.
+
 Khoá Gemini chỉ đọc từ biến môi trường GEMINI_API_KEY (hoặc GEMINI_API_KEYS, cách nhau dấu phẩy), không in, không ghi file.
 """
 
@@ -61,6 +65,17 @@ LUFS_TARGET, LUFS_TOLERANCE, TRUE_PEAK_MAX = -14.0, 1.0, -1.0
 LIMIT_DBFS = -2.5            # trần đỉnh mẫu; chừa ~1.5 dB cho đỉnh liên mẫu + mã hoá AAC
 LLM_MODEL = os.environ.get("AGS_GEMINI_TEXT_MODEL", "").strip() or "gemini-2.5-flash"
 
+# --layout square-bilingual: khung vuông, tiêu đề / clip 16:9 / dải đáy brand
+LAYOUT_VERTICAL, LAYOUT_SQUARE = "vertical-dub", "square-bilingual"
+SQ, SQ_TITLE_H, SQ_CLIP_H = 1080, 250, 608          # clip 1080x608 (16:9) đặt ngay dưới tiêu đề; phần còn lại là dải đáy
+SQ_BAND_Y = SQ_TITLE_H + SQ_CLIP_H                   # 858..1080: dải đáy brand (dòng nguồn + chỗ logo/CTA)
+SQ_TITLE_BOX = (60, 20, 1020, 215)
+SQ_VI_BOX = (60, 676, 1020, 790)                     # phụ đề Việt (to, <= 2 dòng), neo đáy ở y=790
+SQ_EN_BOX = (60, 796, 1020, 846)                     # phụ đề Anh (nhỏ, 1 dòng), neo đỉnh ở y=796
+SQ_SOURCE_BOX = (60, 880, 1020, 930)
+SQ_MAX_TITLE_WORDS, SQ_MIN_CLIP_SECONDS = 9, 5.0
+SQ_TITLE_FONT = (88, 48)                             # (cỡ gốc, cỡ sàn) của tiêu đề, mỗi dòng 1 dòng
+
 
 class ProShortsError(RuntimeError):
     """Lỗi có mã E-pro-shorts-vi-NNN trong tài liệu docs/pro-shorts-vi/srs/spec.md."""
@@ -78,11 +93,11 @@ def slugify(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:48] or "video"
 
 
-def source_line(meta):
+def source_line(meta, note="lồng tiếng Việt"):
     """Dòng nguồn hiện suốt video: tên PRO + kênh."""
     pro, channel = meta["pro"], meta["channel"]
     who = pro if pro.lower() == channel.lower() else f"{pro} · kênh {channel}"
-    return nfc(f"Nguồn: {who} · lồng tiếng Việt")
+    return nfc(f"Nguồn: {who} · {note}")
 
 
 def meta_from_info(info, pro=None):
@@ -346,16 +361,16 @@ def _emphasis(line):
     return " ".join(f"{mark}{ass_text(w)}{reset}" if re.search(r"\d", w) else ass_text(w) for w in line.split())
 
 
-def fit_source(source):
+def fit_source(source, box=SOURCE_BOX):
     """(từ, cỡ chữ, dòng): dòng nguồn luôn đúng 1 dòng, rộng <= SOURCE_BOX, cao vừa SOURCE_BOX; hạ cỡ chữ tới 22,
     còn dài thì bỏ bớt từ cuối (rồi ký tự cuối của từ duy nhất) + '…' cho tới khi vừa."""
     words = nfc(source).split() or ["…"]
-    limit = (SOURCE_BOX[2] - SOURCE_BOX[0]) / FIT_MARGIN
+    limit = (box[2] - box[0]) / FIT_MARGIN
     while True:
         size, font, lines = fit_layout(words, "bold", 34, 0, limit, 1, 22, FONT_CAPTION)
         if len(lines) == 1 and font.getlength(" ".join(words)) <= limit:
             from PIL import ImageFont
-            box_h = SOURCE_BOX[3] - SOURCE_BOX[1]
+            box_h = box[3] - box[1]
             while size > 16:                       # dấu chồng của tiếng Việt cao hơn cỡ chữ: hạ cỡ tới khi glyph vừa hộp
                 top, bottom = ImageFont.truetype(str(FONT_CAPTION), size).getbbox(" ".join(words))[1::2]
                 if bottom - top <= box_h:
@@ -460,6 +475,174 @@ def render_short(video, item, meta, engine, voice, tmp, out_mp4, args):
             "cues": len(caption_cues(words))}
 
 
+# --------------------------------------------------------------------------- layout vuông song ngữ (giữ tiếng gốc)
+
+def _fit_text(text, base, floor, box, max_lines, font_file):
+    """(cỡ chữ, dòng, vừa?) cho `text` trong `box`: tối đa max_lines dòng, mỗi dòng rộng và cả khối cao vừa hộp."""
+    words = nfc(text).split()
+    limit = (box[2] - box[0]) / FIT_MARGIN
+    size, font, lines = fit_layout(words, "bold", base, 0, limit, max_lines, floor, font_file)
+    rows = [" ".join(words[i] for i in line) for line in lines]
+    ok = bool(rows) and len(rows) <= max_lines and all(font.getlength(r) <= limit for r in rows) \
+        and len(rows) * size * 1.25 <= box[3] - box[1]
+    return size, rows, ok
+
+
+def _title_parts(line):
+    """'Tên: *vế hook*' -> [(chữ, là_hook)]; cặp dấu * đánh dấu vế hook (tô màu brand)."""
+    return [(part, i % 2 == 1) for i, part in enumerate(line.split("*")) if part]
+
+
+def validate_square_plan(plan, duration):
+    """Kiểm plan của layout vuông trước khi render (E-pro-shorts-vi-012 cấu trúc/độ dài, -013 chữ không vừa khung)."""
+    shorts = plan.get("shorts") if isinstance(plan, dict) else None
+    if not shorts or not isinstance(shorts, list):
+        fail("012", "plan thiếu danh sách shorts")
+    for number, item in enumerate(shorts, 1):
+        where = f"short {number}"
+        try:
+            start, end = float(item["start"]), float(item["end"])
+        except (KeyError, TypeError, ValueError):
+            fail("012", f"{where}: thiếu start/end")
+        if not item.get("name"):
+            fail("012", f"{where}: thiếu name")
+        if not 0 <= start < end <= duration + 0.5:
+            fail("012", f"{where}: mốc {start}-{end} ngoài video {duration:.0f}s")
+        if end - start > MAX_SHORT_SECONDS:
+            fail("012", f"{where}: dài {end - start:.1f}s, tối đa {MAX_SHORT_SECONDS:.0f}s (bản quyền + nền tảng)")
+        if end - start < SQ_MIN_CLIP_SECONDS:
+            fail("012", f"{where}: dài {end - start:.1f}s, tối thiểu {SQ_MIN_CLIP_SECONDS:.0f}s")
+        title = item.get("title_lines")
+        if not (isinstance(title, list) and len(title) == 2 and all(isinstance(t, str) and t.strip() for t in title)):
+            fail("012", f"{where}: title_lines cần đúng 2 chuỗi không rỗng")
+        if sum(len(t.replace("*", "").split()) for t in title) > SQ_MAX_TITLE_WORDS:
+            fail("012", f"{where}: tiêu đề quá {SQ_MAX_TITLE_WORDS} chữ")
+        joined = "".join(title)
+        if joined.count("*") % 2 or "*" not in joined:
+            fail("012", f"{where}: title_lines cần ít nhất một vế hook bọc trong cặp dấu *")
+        for line in title:
+            plain = nfc(line.replace("*", "")).strip()
+            if not _fit_text(plain, *SQ_TITLE_FONT, SQ_TITLE_BOX, 1, FONT_HOOK)[2]:
+                fail("013", f"{where}: dòng tiêu đề không vừa khung: {plain!r}")
+        cues, last_end = item.get("cues"), start
+        if not isinstance(cues, list) or not cues:
+            fail("012", f"{where}: thiếu cues")
+        for cue in cues:
+            try:
+                t0, t1 = float(cue["t0"]), float(cue["t1"])
+            except (KeyError, TypeError, ValueError):
+                fail("012", f"{where}: cue thiếu t0/t1: {cue}")
+            if not (start <= t0 < t1 <= end + 0.01 and t0 >= last_end - 0.01):
+                fail("012", f"{where}: cue {t0}-{t1} ngoài đoạn {start}-{end} hoặc chồng cue trước")
+            last_end = t1
+            if not (str(cue.get("vi", "")).strip() and str(cue.get("en", "")).strip()):
+                fail("012", f"{where}: cue {t0}-{t1} thiếu vi/en")
+            if not _fit_text(cue["vi"], 44, 32, SQ_VI_BOX, 2, FONT_CAPTION)[2]:
+                fail("013", f"{where}: phụ đề Việt không vừa 2 dòng: {cue['vi']!r}")
+            if not _fit_text(cue["en"], 28, 22, SQ_EN_BOX, 1, FONT_CAPTION)[2]:
+                fail("013", f"{where}: phụ đề Anh không vừa 1 dòng: {cue['en']!r}")
+    return plan
+
+
+def write_ass_square(path, item, source):
+    """ASS 1080x1080: tiêu đề 2 dòng (vế hook xanh brand), phụ đề Việt (neon) + Anh (giấy) đốt cứng, dòng nguồn trên dải đáy."""
+    start, total = float(item["start"]), float(item["end"]) - float(item["start"])
+    plains = [nfc(t.replace("*", "")).strip() for t in item["title_lines"]]
+    title_size = min(_fit_text(p, *SQ_TITLE_FONT, SQ_TITLE_BOX, 1, FONT_HOOK)[0] for p in plains)
+    cx, ty = SQ // 2, (SQ_TITLE_BOX[1] + SQ_TITLE_BOX[3]) // 2
+    gap = round(title_size * 0.62)
+    outline = ass_color(INK)
+    styles = [
+        f"Style: Title,{_family(FONT_HOOK)},{title_size},{ass_color(INK)},&H000000,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1",
+        f"Style: Vi,{_family(FONT_CAPTION)},44,{ass_color(NEON)},&H000000,{outline},&H00000000,-1,0,0,0,100,100,0,0,1,3,0,2,0,0,0,1",
+        f"Style: En,{_family(FONT_CAPTION)},28,{ass_color(PAPER)},&H000000,{outline},&H00000000,-1,0,0,0,100,100,0,0,1,2,0,8,0,0,0,1",
+        f"Style: Source,{_family(FONT_CAPTION)},34,{ass_color(PAPER)},&H000000,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1",
+    ]
+    events = []
+    for row, line in enumerate(item["title_lines"]):
+        body = "".join(f"{{\\c{ass_color(GREEN if hook else INK)}}}{ass_text(part)}" for part, hook in _title_parts(line))
+        events.append(f"Dialogue: 1,{format_ass_time(0)},{format_ass_time(total)},Title,,0,0,0,,"
+                      f"{{\\an5\\pos({cx},{ty + (row * 2 - 1) * gap})}}{body}")
+    src_words, src_size, src_lines = fit_source(source, SQ_SOURCE_BOX)
+    src_text = "\\N".join(ass_text(" ".join(src_words[i] for i in line)) for line in src_lines)
+    sy = (SQ_SOURCE_BOX[1] + SQ_SOURCE_BOX[3]) // 2
+    events.append(f"Dialogue: 0,{format_ass_time(0)},{format_ass_time(total)},Source,,0,0,0,,"
+                  f"{{\\an5\\pos({cx},{sy})\\fs{src_size}}}{src_text}")
+    for cue in item["cues"]:
+        t0, t1 = format_ass_time(float(cue["t0"]) - start), format_ass_time(min(float(cue["t1"]) - start, total))
+        vi_size, vi_rows, _ = _fit_text(cue["vi"], 44, 32, SQ_VI_BOX, 2, FONT_CAPTION)
+        en_size, en_rows, _ = _fit_text(cue["en"], 28, 22, SQ_EN_BOX, 1, FONT_CAPTION)
+        events.append(f"Dialogue: 2,{t0},{t1},Vi,,0,0,0,,{{\\an2\\pos({cx},{SQ_VI_BOX[3]})\\fs{vi_size}}}"
+                      + "\\N".join(ass_text(r) for r in vi_rows))
+        events.append(f"Dialogue: 2,{t0},{t1},En,,0,0,0,,{{\\an8\\pos({cx},{SQ_EN_BOX[1]})\\fs{en_size}}}"
+                      + "\\N".join(ass_text(r) for r in en_rows))
+    Path(path).write_text("[Script Info]\nScriptType: v4.00+\nPlayResX: %d\nPlayResY: %d\nWrapStyle: 2\nScaledBorderAndShadow: yes\n\n"
+                          "[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,"
+                          "Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\n"
+                          "%s\n\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n%s\n"
+                          % (SQ, SQ, "\n".join(styles), "\n".join(events)), encoding="utf-8")
+
+
+def _q(path):
+    """Đường dẫn trong chuỗi nháy đơn của bộ lọc FFmpeg: escape \\, ' và ':'."""
+    return str(path).replace("\\", "\\\\").replace("'", "'\\\\\\''").replace(":", "\\:")
+
+
+def render_square(video, item, meta, tmp, out_mp4):
+    """Một Reel vuông 1080x1080 từ đoạn [start,end] của video gốc, giữ nguyên tiếng gốc -> out_mp4. Trả dict báo cáo."""
+    start, total = float(item["start"]), round(float(item["end"]) - float(item["start"]), 3)
+    ass = Path(tmp) / "square.ass"
+    write_ass_square(ass, item, source_line(meta, "giữ tiếng gốc · phụ đề Việt"))
+    fonts = _q(FONTS)
+    paper, green, neon = (c.replace("#", "0x") for c in (PAPER, GREEN, NEON))
+    graph = (f"color=c={paper}:s={SQ}x{SQ}:r={FPS}:d={total}[bg];"
+             f"[0:v]scale={SQ}:{SQ_CLIP_H}:force_original_aspect_ratio=increase,crop={SQ}:{SQ_CLIP_H},fps={FPS}[clip];"
+             f"[bg][clip]overlay=0:{SQ_TITLE_H},"
+             f"drawbox=x=0:y={SQ_BAND_Y}:w={SQ}:h={SQ - SQ_BAND_Y}:color={green}:t=fill,"
+             f"drawbox=x=0:y={SQ_BAND_Y}:w={SQ}:h=8:color={neon}:t=fill,"
+             f"drawbox=x=0:y={SQ_TITLE_H}:w={SQ}:h={SQ_CLIP_H}:color={green}:t=3,"
+             f"drawbox=x={SQ // 2 - 80}:y={SQ_TITLE_H - 24}:w=160:h=8:color={neon}:t=fill,"
+             f"subtitles='{_q(ass)}':fontsdir='{fonts}',format=yuv420p[v];"
+             "[0:a]aresample=48000[a]")
+    raw = Path(tmp) / "composed.mp4"
+    run_cmd(["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.3f}", "-t", f"{total}", "-i", video, "-filter_complex", graph,
+             "-map", "[v]", "-map", "[a]", "-t", f"{total}", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+             "-r", FPS, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", raw])
+    out_mp4.parent.mkdir(parents=True, exist_ok=True)
+    out_mp4.unlink(missing_ok=True)
+    normalize_loudness(raw, out_mp4)
+    return {"file": out_mp4.name, "layout": LAYOUT_SQUARE, "seconds": total, "original_audio": "kept", "cues": len(item["cues"])}
+
+
+def caption_text_square(item, meta):
+    title = nfc(" ".join(t.replace("*", "") for t in item["title_lines"]))
+    return (f"{title}\n\nNguồn: {meta['pro']} (kênh {meta['channel']}) — {meta['url']}\n"
+            "Clip công khai cắt từ video gốc, giữ tiếng gốc; phụ đề Việt do người làm kho dịch. Xem đủ bài ở kênh gốc.\n")
+
+
+def main_square(args, video, meta, out):
+    """Layout vuông: plan -> render từng Reel -> kiểm đặc tả + guard. Không bóc băng, không TTS."""
+    plan = validate_square_plan(json.loads(args.plan.read_text(encoding="utf-8")), video_info(video)["duration"])
+    (out / "plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding="utf-8")
+    report, failed = {"source": meta, "layout": LAYOUT_SQUARE, "shorts": []}, False
+    for number, item in enumerate(plan["shorts"], 1):
+        mp4 = out / f"reel-{number:02d}-{slugify(item['name'])}.mp4"
+        with tempfile.TemporaryDirectory(prefix="ags_proshort_", dir=args.work_dir.resolve() / meta["id"]) as tmp:
+            entry = render_square(video, item, meta, tmp, mp4)
+        entry["check"] = check_output(mp4, f"{SQ}x{SQ}")
+        code, text = run_guard(mp4, mp4.with_name(mp4.stem + "_sheet.jpg"))
+        entry.update(guard_exit=code, guard=text)
+        if code != 0:
+            failed = True
+            print(f"❌ E-pro-shorts-vi-011: guard báo lỗi trên {mp4.name} (exit {code}) — giữ file để xem", file=sys.stderr)
+        mp4.with_suffix(".caption.txt").write_text(caption_text_square(item, meta), encoding="utf-8")
+        report["shorts"].append(entry)
+        print(json.dumps(entry, ensure_ascii=False), flush=True)
+    (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(json.dumps({"out": str(out), "shorts": len(report["shorts"]), "guard_failed": failed}, ensure_ascii=False))
+    return 1 if failed else 0
+
+
 def normalize_loudness(src, dst, passes=3):
     """-14 LUFS: bù gain theo độ to đo được rồi chặn đỉnh ở LIMIT_DBFS (true peak <= -1 dBTP cả sau AAC); limiter làm
     hụt độ to nên đo lại và bù tiếp, tối đa `passes` lượt, tới khi lệch <= 0.3 LU. loudnorm một lượt hụt 1–2 LU trên
@@ -499,12 +682,12 @@ def measure_loudness(path):
     return float(lufs.group(1)), float(peak.group(1))
 
 
-def check_output(path):
+def check_output(path, size=f"{W}x{H}"):
     """Kiểm đặc tả đầu ra; trả dict báo cáo, ném E-009 nếu sai."""
     probe = ffprobe_summary(path)
     lufs, peak = measure_loudness(path)
     problems = []
-    if probe["size"] != f"{W}x{H}" or probe["video"] != "h264" or abs(probe["fps"] - FPS) > 0.01 or probe["audio"] != "aac":
+    if probe["size"] != size or probe["video"] != "h264" or abs(probe["fps"] - FPS) > 0.01 or probe["audio"] != "aac":
         problems.append(f"định dạng {probe}")
     if probe["duration"] > MAX_SHORT_SECONDS:
         problems.append(f"dài {probe['duration']}s > {MAX_SHORT_SECONDS}s")
@@ -558,6 +741,8 @@ def parse_args(argv=None):
     p.add_argument("--n", type=int, default=3, help="số short (3–5)")
     p.add_argument("--plan", type=Path, help="plan.json có sẵn (bỏ qua bước Gemini chọn đoạn/dịch)")
     p.add_argument("--ab-first", metavar="ENGINE:VOICE", help="render thêm short #1 bằng giọng này để so sánh (vd vieneu:Ngọc)")
+    p.add_argument("--layout", default=LAYOUT_VERTICAL, help=f"{LAYOUT_VERTICAL} (1080x1920, lồng tiếng) | {LAYOUT_SQUARE} "
+                   "(1080x1080, giữ tiếng gốc, phụ đề Việt+Anh; cần --plan)")
     p.add_argument("--out-dir", type=Path, default=Path("out"))
     p.add_argument("--work-dir", type=Path, default=Path("work"))
     p.add_argument("--whisper-model", default="base", help="model bóc băng video gốc")
@@ -575,6 +760,10 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     try:
+        if args.layout not in (LAYOUT_VERTICAL, LAYOUT_SQUARE):
+            fail("012", f"--layout chỉ nhận {LAYOUT_VERTICAL} hoặc {LAYOUT_SQUARE}: {args.layout!r}")
+        if args.layout == LAYOUT_SQUARE and (not args.plan or args.ab_first):
+            fail("012", f"--layout {LAYOUT_SQUARE} cần --plan và không dùng --ab-first (không lồng tiếng)")
         if args.ab_first and args.ab_first.partition(":")[0] not in AB_ENGINES:
             fail("003", f"--ab-first chỉ nhận engine {sorted(AB_ENGINES)} (ZeroTTS chỉ để demo, không dùng cho sản phẩm): {args.ab_first!r}")
         for tool in ("ffmpeg", "ffprobe"):
@@ -586,6 +775,8 @@ def main(argv=None):
         work.mkdir(parents=True, exist_ok=True)
         out = args.out_dir.resolve() / f"{slugify(meta['pro'])}-{slugify(meta['title'])[:32]}-{meta['id']}"
         out.mkdir(parents=True, exist_ok=True)
+        if args.layout == LAYOUT_SQUARE:
+            return main_square(args, video, meta, out)
         transcript = transcribe(video, work, args.whisper_model)
         if args.plan:
             plan = validate_plan(json.loads(args.plan.read_text(encoding="utf-8")), transcript["duration"], args.n)

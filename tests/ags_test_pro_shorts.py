@@ -9,6 +9,7 @@ Chạy:  python -m pytest -q tests/ags_test_pro_shorts.py
 """
 
 import contextlib, io
+import shutil
 import os
 import re
 import sys
@@ -323,6 +324,77 @@ class KnowledgeTest(unittest.TestCase):
         self.assertIn("(https://www.youtube.com/watch?v=RVbvhPGFi6E&t=120s)", text)
         self.assertEqual(len(re.findall(r"^### \d+\. ", text, re.M)), 5)
         self.assertIn("`doan-3` — HỎI TRƯỚC RỒI MỚI BÁN (5:00–5:40", text)
+
+class SquareBilingualTest(unittest.TestCase):
+    META = {"pro": "Alex Hormozi", "channel": "Alex Hormozi", "url": "https://example.com/v", "id": "v"}
+
+    @staticmethod
+    def item(**changes):
+        base = {"name": "mau", "start": 0.0, "end": 6.0, "title_lines": ["Alex Hormozi: *Đừng trả lời*", "*câu hỏi của khách*"],
+                "cues": [{"t0": 0.5, "t1": 2.5, "en": "Do not answer the question.", "vi": "Đừng trả lời ngay câu hỏi."},
+                         {"t0": 3.0, "t1": 5.5, "en": "Ask a question about the question.",
+                          "vi": "Hãy hỏi lại một câu về chính câu hỏi đó của khách."}]}
+        return {**base, **changes}
+
+    def validate(self, **changes):
+        return ps.validate_square_plan({"shorts": [self.item(**changes)]}, 120.0)
+
+    def test_plan_rejects_over_60s_long_title_bad_marker_and_stray_cue(self):
+        cases = [({"start": 0.0, "end": 61.0}, "012"),
+                 ({"title_lines": ["Một hai ba bốn năm: *sáu bảy*", "*tám chín mười*"]}, "012"),
+                 ({"title_lines": ["Alex Hormozi:", "câu hỏi của khách"]}, "012"),
+                 ({"cues": [{"t0": 0.5, "t1": 7.0, "en": "a", "vi": "b"}]}, "012"),
+                 ({"cues": [{"t0": 0.5, "t1": 2.0, "en": "word " * 40, "vi": "chữ"}]}, "013")]
+        for changes, code in cases:
+            with self.subTest(changes=list(changes)), self.assertRaises(ps.ProShortsError) as ctx:
+                self.validate(**changes)
+            self.assertEqual(error_code(ctx), f"E-pro-shorts-vi-{code}")
+        self.validate(start=0.0, end=60.0)      # đúng 60 s thì được
+
+    def test_unknown_layout_and_missing_plan_exit_before_any_work(self):
+        for argv in (["x.mp4", "--layout", "triangle"], ["x.mp4", "--layout", "square-bilingual"]):
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                self.assertEqual(ps.main(argv), 1)
+            self.assertIn("E-pro-shorts-vi-012", err.getvalue())
+
+    def test_ass_has_source_for_whole_video_title_in_brand_colors_and_two_line_captions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.ass"
+            ps.write_ass_square(path, self.item(), ps.source_line(self.META, "giữ tiếng gốc"))
+            text = path.read_text(encoding="utf-8")
+        rows = dialogues(text)
+        source = [r for r in rows if r["style"] == "Source"]
+        self.assertEqual((len(source), source[0]["start"], source[0]["end"]), (1, "0:00:00.00", "0:00:06.00"))
+        self.assertIn("Nguồn: Alex Hormozi", source[0]["text"])
+        titles = [r for r in rows if r["style"] == "Title"]
+        self.assertEqual(len(titles), 2)
+        self.assertIn(ps.ass_color(ps.GREEN), titles[0]["text"])
+        for row in rows:
+            self.assertTrue(0 <= row["x"] <= ps.SQ and 0 <= row["y"] <= ps.SQ, row)
+        vi = [r for r in rows if r["style"] == "Vi"]
+        en = [r for r in rows if r["style"] == "En"]
+        self.assertEqual((len(vi), len(en)), (2, 2))
+        self.assertTrue(all(r["text"].count("\\N") <= 1 for r in vi))
+        self.assertTrue(all("\\N" not in r["text"] for r in en))
+        self.assertTrue(all(r["y"] < ps.SQ_BAND_Y for r in vi + en))          # phụ đề nằm trên clip, không đè dải đáy
+        self.assertNotIn("ff7a", text.lower())                                # không bê màu cam của mẫu
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "cần ffmpeg")
+    def test_render_is_square_h264_aac_and_keeps_original_audio(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src, out = Path(tmp) / "src.mp4", Path(tmp) / "reel.mp4"
+            ps.run_cmd(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=s=1920x1080:r=30:d=7",
+                        "-f", "lavfi", "-i", "sine=f=330:d=7", "-c:v", "libx264", "-c:a", "aac", "-shortest", src])
+            work = Path(tmp) / "it's a dir"                                   # dấu nháy đơn trong đường dẫn không được làm vỡ bộ lọc
+            work.mkdir()
+            entry = ps.render_square(src, self.item(), self.META, work, out)
+            check = ps.check_output(out, f"{ps.SQ}x{ps.SQ}")
+        self.assertEqual((check["size"], check["video"], check["audio"]), ("1080x1080", "h264", "aac"))
+        self.assertLessEqual(check["duration"], 60)
+        self.assertEqual(entry["original_audio"], "kept")
+        self.assertLess(check["lufs"], -10)                                  # có tiếng (sine) chứ không câm
+
 
 
 if __name__ == "__main__":
